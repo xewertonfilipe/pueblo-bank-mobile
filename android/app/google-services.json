@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "212215922284",
+    "project_id": "pueblo-bank--mobile",
+    "storage_bucket": "pueblo-bank--mobile.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:212215922284:android:4ee9e70077e27508e5a249",
+        "android_client_info": {
+          "package_name": "pueblo.bank"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD99x9QdjgkfKqUv_aea0jcFEjFB3BrL3w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
