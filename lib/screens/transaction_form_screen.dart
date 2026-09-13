@@ -74,7 +74,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
         receiptPath: _existing?.receiptPath,
         createdAt: _existing?.createdAt,
       );
-      if (_receipt != null) {
+      if (_receipt != null && _category == TransactionCategory.deposit) {
         final upload = await StorageService().uploadReceipt(userId: userId, transactionId: transaction.id, file: _receipt!);
         transaction = transaction.copyWith(receiptUrl: upload.url, receiptPath: upload.path);
         newReceiptPath = upload.path;
@@ -151,7 +151,12 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               ],
               onChanged: (value) {
                 if (value != null) {
-                  setState(() => _category = value);
+                  setState(() {
+                    _category = value;
+                    if (value == TransactionCategory.withdrawal) {
+                      _receipt = null;
+                    }
+                  });
                 }
               },
             ),
@@ -179,11 +184,12 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                 icon: const Icon(Icons.calendar_month),
               ),
             ),
-            OutlinedButton.icon(
-              onPressed: _pickReceipt,
-              icon: const Icon(Icons.attach_file),
-              label: Text(_receipt == null ? 'Anexar recibo' : 'Recibo selecionado'),
-            ),
+            if (_category == TransactionCategory.deposit)
+              OutlinedButton.icon(
+                onPressed: _pickReceipt,
+                icon: const Icon(Icons.attach_file),
+                label: Text(_receipt == null ? 'Anexar recibo' : 'Recibo selecionado'),
+              ),
             if (_existing?.receiptUrl != null) ...[
               const SizedBox(height: 8),
               Text('Comprovante anexado', style: Theme.of(context).textTheme.bodyMedium),

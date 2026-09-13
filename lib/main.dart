@@ -19,7 +19,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await FirebaseAppCheck.instance.activate(
-    androidProvider: AndroidProvider.debug,
+    providerAndroid: const AndroidDebugProvider(),
   );
   runApp(
     MultiProvider(
