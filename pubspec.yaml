@@ -41,6 +41,7 @@ dependencies:
   provider: ^6.1.2
   image_picker: ^1.1.2
   fl_chart: ^0.69.0
+  another_flushbar: ^1.12.30
 
 dev_dependencies:
   flutter_test:

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:another_flushbar/flushbar.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -70,13 +71,23 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       if (!mounted) return;
       await context.read<TransactionProvider>().save(transaction);
       if (mounted) {
-        final message = _existing == null
-            ? (_category == TransactionCategory.deposit
-                ? 'Depositado com sucesso!'
-                : 'Saque realizado com sucesso!')
+        final isDeposit = _category == TransactionCategory.deposit;
+        final isNew = _existing == null;
+        final message = isNew
+            ? (isDeposit ? 'Depositado com sucesso!' : 'Saque realizado com sucesso!')
             : 'Transação editada com sucesso!';
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-        Future.delayed(const Duration(milliseconds: 1500), () {
+        final backgroundColor = isNew
+            ? (isDeposit ? Colors.green : Colors.red)
+            : Colors.blue;
+        Flushbar(
+          message: message,
+          backgroundColor: backgroundColor,
+          duration: const Duration(seconds: 2),
+          flushbarPosition: FlushbarPosition.TOP,
+          margin: const EdgeInsets.all(8),
+          borderRadius: BorderRadius.circular(8),
+        ).show(context);
+        Future.delayed(const Duration(milliseconds: 2500), () {
           if (mounted) Navigator.pop(context);
         });
       }
