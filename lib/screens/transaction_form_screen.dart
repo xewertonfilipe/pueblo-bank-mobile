@@ -92,7 +92,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
         });
       }
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nao foi possivel salvar a transacao.')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Não foi possível salvar a transação.')));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -102,7 +102,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_existing == null ? 'Nova transacao' : 'Editar transacao'),
+        title: Text(_existing == null ? 'Nova transação' : 'Editar transação'),
       ),
       body: Form(
         key: _formKey,
@@ -128,7 +128,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               items: const [
                 DropdownMenuItem(
                   value: TransactionCategory.deposit,
-                  child: Text('Deposito'),
+                  child: Text('Depósito'),
                 ),
                 DropdownMenuItem(
                   value: TransactionCategory.withdrawal,
@@ -144,7 +144,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _description,
-              decoration: const InputDecoration(labelText: 'Descricao'),
+              decoration: const InputDecoration(labelText: 'Descrição'),
             ),
             const SizedBox(height: 16),
             ListTile(

@@ -26,7 +26,7 @@ class FinancialSummary extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _SummaryItem(
-                  label: 'Depositos',
+                  label: 'Depósitos',
                   value: provider.summaryDeposits,
                   color: Colors.green,
                 ),

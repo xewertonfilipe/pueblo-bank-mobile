@@ -33,7 +33,7 @@ class TransactionProvider extends ChangeNotifier {
   double get withdrawals => _items.where((item) => !item.isDeposit).fold<double>(0.0, (acc, item) => acc + item.amount);
   double get balance => deposits - withdrawals;
 
-  // Dados sem filtro, usados pelo Dashboard para nao refletir os filtros da tela de Transacoes.
+  // Dados sem filtro, usados pelo Dashboard para não refletir os filtros da tela de Transações.
   List<TransactionModel> get summaryItems => List.unmodifiable(_summaryItems);
   double get summaryDeposits => _summaryItems.where((item) => item.isDeposit).fold<double>(0.0, (acc, item) => acc + item.amount);
   double get summaryWithdrawals => _summaryItems.where((item) => !item.isDeposit).fold<double>(0.0, (acc, item) => acc + item.amount);
@@ -76,7 +76,7 @@ class TransactionProvider extends ChangeNotifier {
       _cursor = page.cursor;
       _hasMore = page.items.isNotEmpty && page.items.length == 20;
     } catch (_) {
-      _error = 'Nao foi possivel carregar as transacoes.';
+      _error = 'Não foi possível carregar as transações.';
       _items = [];
       _cursor = null;
       _hasMore = false;
@@ -96,7 +96,7 @@ class TransactionProvider extends ChangeNotifier {
       _cursor = page.cursor;
       _hasMore = page.items.isNotEmpty && page.items.length == 20;
     } catch (_) {
-      _error = 'Nao foi possivel carregar mais transacoes.';
+      _error = 'Não foi possível carregar mais transações.';
     } finally {
       _loadingMore = false;
       notifyListeners();

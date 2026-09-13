@@ -40,7 +40,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final provider = context.watch<TransactionProvider>();
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Transacoes'),
+        title: const Text('Transações'),
         actions: [
           IconButton(
             onPressed: _pickDateRange,
@@ -58,7 +58,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             ),
             itemBuilder: (context) => const [
               PopupMenuItem(value: 'all', child: Text('Todas')),
-              PopupMenuItem(value: 'deposit', child: Text('Depositos')),
+              PopupMenuItem(value: 'deposit', child: Text('Depósitos')),
               PopupMenuItem(value: 'withdrawal', child: Text('Saques')),
             ],
           ),
@@ -74,7 +74,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       ? ListView(
                           children: const [
                             SizedBox(height: 240),
-                            Center(child: Text('Nenhuma transacao encontrada.')),
+                            Center(child: Text('Nenhuma transação encontrada.')),
                           ],
                         )
                       : ListView.builder(
@@ -96,7 +96,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                               ),
                               title: Text(
                                 item.description.isEmpty
-                                    ? (item.isDeposit ? 'Deposito' : 'Saque')
+                                    ? (item.isDeposit ? 'Depósito' : 'Saque')
                                     : item.description,
                               ),
                               subtitle: Text(

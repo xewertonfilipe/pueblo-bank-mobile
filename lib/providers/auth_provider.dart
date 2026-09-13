@@ -43,7 +43,7 @@ class AuthProvider extends ChangeNotifier {
       _error = _messageFor(exception.code);
       return false;
     } catch (_) {
-      _error = 'Nao foi possivel concluir a operacao.';
+      _error = 'Não foi possível concluir a operação.';
       return false;
     } finally {
       _loading = false;
@@ -56,13 +56,13 @@ class AuthProvider extends ChangeNotifier {
       case 'invalid-credential':
       case 'wrong-password':
       case 'user-not-found':
-        return 'E-mail ou senha invalidos.';
+        return 'E-mail ou senha inválidos.';
       case 'email-already-in-use':
-        return 'Este e-mail ja esta cadastrado.';
+        return 'Este e-mail já está cadastrado.';
       case 'weak-password':
         return 'Use uma senha com pelo menos seis caracteres.';
       default:
-        return 'Nao foi possivel autenticar. Tente novamente.';
+        return 'Não foi possível autenticar. Tente novamente.';
     }
   }
 

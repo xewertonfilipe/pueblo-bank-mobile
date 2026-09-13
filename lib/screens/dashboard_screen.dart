@@ -20,7 +20,7 @@ class DashboardScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Visao geral'),
+        title: const Text('Visão geral'),
         actions: [
           IconButton(
             onPressed: () async {
@@ -44,7 +44,7 @@ class DashboardScreen extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           children: [
             Text(
-              'Ola, ${auth.user?.email?.split('@').first ?? 'pessoa'}',
+              'Olá, ${auth.user?.email?.split('@').first ?? 'pessoa'}',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 4),
@@ -52,24 +52,24 @@ class DashboardScreen extends StatelessWidget {
             const SizedBox(height: 24),
             FinancialSummary(provider: provider),
             const SizedBox(height: 24),
-            Text('Distribuicao', style: Theme.of(context).textTheme.titleMedium),
+            Text('Distribuição', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
             CategoryDistributionChart(provider: provider),
             const SizedBox(height: 24),
-            Text('Evolucao financeira', style: Theme.of(context).textTheme.titleMedium),
+            Text('Evolução financeira', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
             FinancialEvolutionChart(provider: provider),
             const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: () => Navigator.pushNamed(context, Routes.transactionForm),
               icon: const Icon(Icons.add),
-              label: const Text('Nova transacao'),
+              label: const Text('Nova transação'),
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed: () => Navigator.pushNamed(context, Routes.transactions),
               icon: const Icon(Icons.receipt_long),
-              label: const Text('Ver transacoes'),
+              label: const Text('Ver transações'),
             ),
             if (recentItems.isNotEmpty) ...[
               const SizedBox(height: 28),
@@ -83,7 +83,7 @@ class DashboardScreen extends StatelessWidget {
                   ),
                   title: Text(
                     item.description.isEmpty
-                        ? (item.isDeposit ? 'Deposito' : 'Saque')
+                        ? (item.isDeposit ? 'Depósito' : 'Saque')
                         : item.description,
                   ),
                   trailing: Text('R\$ ${item.amount.toStringAsFixed(2)}'),
