@@ -1,0 +1,12 @@
+appId: pueblo.bank
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    id: ".*email.*"
+- inputText: "email-sem-arroba"
+- tapOn:
+    id: ".*password.*"
+- inputText: "123456"
+- tapOn: "Entrar"
+- assertVisible: "Informe um e-mail valido."

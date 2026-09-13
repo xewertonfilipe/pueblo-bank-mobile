@@ -1,0 +1,23 @@
+appId: pueblo.bank
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    id: ".*email.*"
+- inputText: "pos@fiap.com.br"
+- tapOn:
+    id: ".*password.*"
+- inputText: "123456"
+- tapOn: "Entrar"
+- assertVisible: "Visão geral"
+- tapOn: "Ver transações"
+- assertVisible: "Transações"
+- tapOn:
+    index: 0
+    id: ".*transaction_item.*"
+- assertVisible: "Editar transação"
+- tapOn: "Descrição"
+- eraseText
+- inputText: "Descrição editada E2E"
+- tapOn: "Salvar"
+- assertVisible: "Transação editada com sucesso!"

@@ -1,0 +1,15 @@
+appId: pueblo.bank
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    id: ".*email.*"
+- inputText: "pos@fiap.com.br"
+- tapOn:
+    id: ".*password.*"
+- inputText: "123456"
+- tapOn: "Entrar"
+- assertVisible: "Visão geral"
+- tapOn:
+    id: ".*logout.*"
+- assertVisible: "Pueblo Bank"

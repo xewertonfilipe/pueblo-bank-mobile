@@ -1,0 +1,19 @@
+appId: pueblo.bank
+---
+- launchApp:
+    clearState: true
+- tapOn: "Criar uma conta"
+- assertVisible: "Criar conta"
+- tapOn:
+    id: ".*email.*"
+- inputText: "novo.usuario@teste.com"
+- tapOn:
+    id: ".*password.*"
+    index: 0
+- inputText: "123456"
+- tapOn:
+    id: ".*password.*"
+    index: 1
+- inputText: "123456"
+- tapOn: "Cadastrar"
+- assertVisible: "Visão geral"
