@@ -25,7 +25,7 @@ class TransactionService {
     DateTime? endDate,
     TransactionCategory? category,
     DocumentSnapshot<Map<String, dynamic>>? cursor,
-    int limit = 20,
+    int limit = 10,
   }) async {
     Query<Map<String, dynamic>> query = _collection(userId).orderBy('date', descending: true);
     if (startDate != null) query = query.where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));

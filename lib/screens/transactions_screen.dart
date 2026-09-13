@@ -14,12 +14,19 @@ class TransactionsScreen extends StatefulWidget {
 
 class _TransactionsScreenState extends State<TransactionsScreen> {
   final _scrollController = ScrollController();
+  double? _dragStartY;
+  bool _loadTriggeredThisGesture = false;
 
   @override
   void initState() {
     super.initState();
+    context.read<TransactionProvider>().setFilters(startDate: null, endDate: null, category: null);
     _scrollController.addListener(() {
-      if (_scrollController.position.extentAfter < 300) context.read<TransactionProvider>().loadNextPage();
+      if (!_scrollController.hasClients) return;
+      final provider = context.read<TransactionProvider>();
+      if (_scrollController.position.extentAfter < 500 && provider.hasMore && !provider.loadingMore) {
+        provider.loadNextPage();
+      }
     });
   }
 
@@ -29,10 +36,100 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     super.dispose();
   }
 
+  void _handlePointerDown(PointerDownEvent event) {
+    _dragStartY = event.position.dy;
+    _loadTriggeredThisGesture = false;
+  }
+
+  void _handlePointerMove(PointerMoveEvent event, TransactionProvider provider) {
+    if (_dragStartY == null || _loadTriggeredThisGesture) return;
+    if (!_scrollController.hasClients || _scrollController.position.maxScrollExtent > 0) return;
+    final delta = event.position.dy - _dragStartY!;
+    if (delta < -30) {
+      if (provider.hasMore && !provider.loadingMore) {
+        _loadTriggeredThisGesture = true;
+        provider.loadNextPage();
+      } else if (!provider.hasMore) {
+        _loadTriggeredThisGesture = true;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não há mais transações para carregar.')),
+        );
+      }
+    }
+  }
+
+  void _handlePointerUp(PointerEvent event) {
+    _dragStartY = null;
+    _loadTriggeredThisGesture = false;
+  }
+
   Future<void> _pickDateRange() async {
     final provider = context.read<TransactionProvider>();
-    final range = await showDateRangePicker(context: context, firstDate: DateTime(2020), lastDate: DateTime.now(), initialDateRange: provider.startDate == null || provider.endDate == null ? null : DateTimeRange(start: provider.startDate!, end: provider.endDate!));
-    if (range != null) provider.setFilters(startDate: range.start, endDate: DateTime(range.end.year, range.end.month, range.end.day, 23, 59, 59), category: provider.category);
+    final range = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      initialDateRange: provider.startDate == null || provider.endDate == null
+          ? null
+          : DateTimeRange(start: provider.startDate!, end: provider.endDate!),
+    );
+    if (range != null) {
+      provider.setFilters(
+        startDate: range.start,
+        endDate: DateTime(range.end.year, range.end.month, range.end.day, 23, 59, 59),
+        category: provider.category,
+      );
+    }
+  }
+
+  Widget _buildLoadingIndicator(TransactionProvider provider) {
+    if (provider.loadingMore) {
+      if (provider.error != null && provider.error!.contains('mais')) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(provider.error!),
+              duration: const Duration(seconds: 3),
+              action: SnackBarAction(
+                label: 'Tentar novamente',
+                onPressed: () => provider.loadNextPage(),
+              ),
+            ),
+          );
+        });
+      }
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 12),
+              Text('Carregando mais transações...'),
+            ],
+          ),
+        ),
+      );
+    } else if (!provider.hasMore && provider.items.isNotEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.check_circle, color: Colors.grey, size: 32),
+              const SizedBox(height: 12),
+              Text(
+                'Você atingiu o fim das transações',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
   }
 
   @override
@@ -68,55 +165,58 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           ? const Center(child: CircularProgressIndicator())
           : provider.error != null && provider.items.isEmpty
               ? Center(child: Text(provider.error!))
-              : RefreshIndicator(
-                  onRefresh: provider.loadFirstPage,
-                  child: provider.items.isEmpty
-                      ? ListView(
-                          children: const [
-                            SizedBox(height: 240),
-                            Center(child: Text('Nenhuma transação encontrada.')),
-                          ],
-                        )
-                      : ListView.builder(
-                          controller: _scrollController,
-                          itemCount: provider.items.length + (provider.loadingMore ? 1 : 0),
-                          itemBuilder: (_, index) {
-                            if (index == provider.items.length) {
-                              return const Padding(
-                                padding: EdgeInsets.all(16),
-                                child: Center(child: CircularProgressIndicator()),
-                              );
-                            }
-                            final item = provider.items[index];
-                            return ListTile(
-                              leading: CircleAvatar(
-                                child: Icon(
-                                  item.isDeposit ? Icons.arrow_downward : Icons.arrow_upward,
-                                ),
+              : provider.items.isEmpty
+                  ? ListView(
+                      children: const [
+                        SizedBox(height: 240),
+                        Center(child: Text('Nenhuma transação encontrada.')),
+                      ],
+                    )
+                  : Listener(
+                      onPointerDown: _handlePointerDown,
+                      onPointerMove: (event) => _handlePointerMove(event, provider),
+                      onPointerUp: _handlePointerUp,
+                      onPointerCancel: _handlePointerUp,
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: provider.items.length + 1,
+                        itemBuilder: (_, index) {
+                          if (index == provider.items.length) {
+                            return _buildLoadingIndicator(provider);
+                          }
+                          final item = provider.items[index];
+                          return ListTile(
+                            leading: CircleAvatar(
+                              child: Icon(
+                                item.isDeposit
+                                    ? Icons.arrow_downward
+                                    : Icons.arrow_upward,
                               ),
-                              title: Text(
-                                item.description.isEmpty
-                                    ? (item.isDeposit ? 'Depósito' : 'Saque')
-                                    : item.description,
+                            ),
+                            title: Text(
+                              item.description.isEmpty
+                                  ? (item.isDeposit ? 'Depósito' : 'Saque')
+                                  : item.description,
+                            ),
+                            subtitle: Text(
+                              '${item.date.day.toString().padLeft(2, '0')}/${item.date.month.toString().padLeft(2, '0')}/${item.date.year}',
+                            ),
+                            trailing: Text(
+                              'R\$ ${item.amount.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                color: item.isDeposit ? Colors.green : Colors.red,
                               ),
-                              subtitle: Text(
-                                '${item.date.day.toString().padLeft(2, '0')}/${item.date.month.toString().padLeft(2, '0')}/${item.date.year}',
-                              ),
-                              trailing: Text(
-                                'R\$ ${item.amount.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  color: item.isDeposit ? Colors.green : Colors.red,
-                                ),
-                              ),
-                              onTap: () => Navigator.pushNamed(
-                                context,
-                                Routes.transactionForm,
-                                arguments: item,
-                              ),
-                            );
-                          },
-                        ),
-                ),
+                            ),
+                            onTap: () => Navigator.pushNamed(
+                              context,
+                              Routes.transactionForm,
+                              arguments: item,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.pushNamed(context, Routes.transactionForm),
         child: const Icon(Icons.add),
