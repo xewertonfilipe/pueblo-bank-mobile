@@ -21,6 +21,8 @@ dependencies:
   fl_chart: ^1.2.0
   another_flushbar: ^2.2.4
   firebase_app_check: ^0.4.7
+  local_auth: ^2.3.0
+  shared_preferences: ^2.3.0
 
 dev_dependencies:
   flutter_test:

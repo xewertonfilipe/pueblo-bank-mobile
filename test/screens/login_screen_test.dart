@@ -5,23 +5,41 @@ import 'package:provider/provider.dart';
 import 'package:pueblo_bank/providers/auth_provider.dart';
 import 'package:pueblo_bank/screens/login_screen.dart';
 import 'package:pueblo_bank/services/auth_service.dart';
+import 'package:pueblo_bank/services/biometric_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Evita tocar FirebaseAuth.instance durante os testes de widget.
 class FakeAuthService extends AuthService {
   @override
   Stream<User?> get authStateChanges => const Stream.empty();
+
+  @override
+  User? get currentUser => null;
+}
+
+// Evita tocar o canal de plataforma do local_auth durante os testes de widget.
+class FakeBiometricService extends BiometricService {
+  @override
+  Future<bool> canUseBiometric() async => false;
 }
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   Widget buildApp() {
     return ChangeNotifierProvider(
-      create: (_) => AuthProvider(service: FakeAuthService()),
+      create: (_) => AuthProvider(service: FakeAuthService(), biometricService: FakeBiometricService()),
       child: const MaterialApp(home: LoginScreen()),
     );
   }
 
   testWidgets('mostra erro quando e-mail é inválido', (tester) async {
     await tester.pumpWidget(buildApp());
+    for (var i = 0; i < 6; i++) {
+      await tester.pump();
+    }
 
     await tester.enterText(find.byType(TextFormField).at(0), 'email-invalido');
     await tester.enterText(find.byType(TextFormField).at(1), '123456');
@@ -33,6 +51,9 @@ void main() {
 
   testWidgets('mostra erro quando senha é curta', (tester) async {
     await tester.pumpWidget(buildApp());
+    for (var i = 0; i < 6; i++) {
+      await tester.pump();
+    }
 
     await tester.enterText(find.byType(TextFormField).at(0), 'user@teste.com');
     await tester.enterText(find.byType(TextFormField).at(1), '123');

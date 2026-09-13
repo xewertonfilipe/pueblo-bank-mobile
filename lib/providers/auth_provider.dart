@@ -4,27 +4,81 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
 import '../services/auth_service.dart';
+import '../services/biometric_service.dart';
 
 class AuthProvider extends ChangeNotifier {
-  AuthProvider({AuthService? service}) : _service = service ?? AuthService() {
+  AuthProvider({AuthService? service, BiometricService? biometricService})
+      : _service = service ?? AuthService(),
+        _biometricService = biometricService ?? BiometricService() {
+    _user = _service.currentUser;
     _subscription = _service.authStateChanges.listen((user) {
       _user = user;
       notifyListeners();
     });
+    _readyFuture = _loadPersistedFlags();
   }
 
   final AuthService _service;
+  final BiometricService _biometricService;
   StreamSubscription<User?>? _subscription;
+  late final Future<void> _readyFuture;
   User? _user;
   bool _loading = false;
   String? _error;
+  bool _biometricEnabled = false;
+  bool _locked = false;
 
   User? get user => _user;
   bool get loading => _loading;
   String? get error => _error;
+  Future<void> get ready => _readyFuture;
+  bool get biometricEnabled => _biometricEnabled;
+  bool get isLocked => _locked;
+  bool get hasUnlockableSession => _user != null && _locked && _biometricEnabled;
+
+  Future<void> _loadPersistedFlags() async {
+    _biometricEnabled = await _service.getBiometricEnabled();
+    // Todo início "a frio" do app (fechado por completo) deve exigir biometria novamente.
+    _locked = _biometricEnabled;
+  }
 
   Future<bool> signIn(String email, String password) => _run(() => _service.signIn(email, password));
   Future<bool> register(String email, String password) => _run(() => _service.register(email, password));
+
+  Future<String?> getLastEmail() => _service.getLastEmail();
+
+  Future<bool> canUseBiometric() => _biometricService.canUseBiometric();
+
+  Future<bool> unlockWithBiometric() async {
+    if (_user == null) return false;
+    final success = await _biometricService.authenticate('Confirme sua identidade para entrar no Pueblo Bank');
+    if (success) {
+      _locked = false;
+      notifyListeners();
+    }
+    return success;
+  }
+
+  Future<void> enableBiometric() async {
+    _biometricEnabled = true;
+    _locked = false;
+    await _service.setBiometricEnabled(true);
+    notifyListeners();
+  }
+
+  Future<void> disableBiometric() async {
+    _biometricEnabled = false;
+    _locked = false;
+    await _service.setBiometricEnabled(false);
+    await signOut();
+  }
+
+  // Soft-lock: mantém a sessão do Firebase viva, só exige biometria para voltar.
+  Future<void> lock() async {
+    if (!_biometricEnabled) return;
+    _locked = true;
+    notifyListeners();
+  }
 
   Future<void> signOut() async {
     await _service.signOut();

@@ -10,6 +10,9 @@ import 'package:pueblo_bank/services/auth_service.dart';
 class FakeAuthService extends AuthService {
   @override
   Stream<User?> get authStateChanges => const Stream.empty();
+
+  @override
+  User? get currentUser => null;
 }
 
 void main() {

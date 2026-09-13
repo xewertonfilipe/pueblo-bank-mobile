@@ -80,9 +80,36 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
       appBar: AppBar(
         title: const Text('Visão geral'),
         actions: [
+          if (auth.biometricEnabled)
+            IconButton(
+              onPressed: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Desativar biometria'),
+                    content: const Text('Você precisará digitar sua senha para entrar da próxima vez. Deseja continuar?'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+                      FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Desativar')),
+                    ],
+                  ),
+                );
+                if (confirmed != true) return;
+                await auth.disableBiometric();
+                if (context.mounted) {
+                  Navigator.pushNamedAndRemoveUntil(context, Routes.login, (route) => false);
+                }
+              },
+              icon: const Icon(Icons.fingerprint),
+              tooltip: 'Desativar biometria',
+            ),
           IconButton(
             onPressed: () async {
-              await auth.signOut();
+              if (auth.biometricEnabled) {
+                await auth.lock();
+              } else {
+                await auth.signOut();
+              }
               if (context.mounted) {
                 Navigator.pushNamedAndRemoveUntil(
                   context,

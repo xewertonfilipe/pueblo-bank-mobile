@@ -1,5 +1,6 @@
 package pueblo.bank
 
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 
-class MainActivity: FlutterActivity()
+// local_auth requires FlutterFragmentActivity to show the biometric prompt.
+class MainActivity: FlutterFragmentActivity()
