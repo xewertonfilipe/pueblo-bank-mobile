@@ -18,6 +18,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _confirmation = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // Evita mostrar um erro deixado por uma tentativa anterior em outra tela.
+    WidgetsBinding.instance.addPostFrameCallback((_) => context.read<AuthProvider>().clearError());
+  }
+
+  @override
   void dispose() {
     _email.dispose();
     _password.dispose();

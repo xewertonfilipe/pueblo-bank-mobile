@@ -1,29 +1,21 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:provider/provider.dart';
 
-import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
 import 'providers/transaction_provider.dart';
 import 'routes.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
+import 'screens/splash_screen.dart';
 import 'screens/transaction_form_screen.dart';
 import 'screens/transactions_screen.dart';
 
 // Usado pelo Dashboard para saber quando volta a ficar visível na pilha de rotas.
 final routeObserver = RouteObserver<PageRoute<dynamic>>();
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  await FirebaseAppCheck.instance.activate(
-    providerAndroid: const AndroidDebugProvider(),
-  );
   runApp(
     MultiProvider(
       providers: [
@@ -51,8 +43,9 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       navigatorObservers: [routeObserver],
-      initialRoute: Routes.login,
+      initialRoute: Routes.splash,
       routes: {
+        Routes.splash: (context) => const SplashScreen(),
         Routes.register: (context) => const RegisterScreen(),
         Routes.login: (context) => const LoginScreen(),
         Routes.dashboard: (context) => const DashboardScreen(),

@@ -28,6 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _prepareLoginScreen() async {
     final auth = context.read<AuthProvider>();
+    auth.clearError();
     await auth.ready;
     final lastEmail = await auth.getLastEmail();
     final canUseBiometric = await auth.canUseBiometric();

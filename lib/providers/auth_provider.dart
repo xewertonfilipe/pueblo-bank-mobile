@@ -36,6 +36,12 @@ class AuthProvider extends ChangeNotifier {
   bool get isLocked => _locked;
   bool get hasUnlockableSession => _user != null && _locked && _biometricEnabled;
 
+  void clearError() {
+    if (_error == null) return;
+    _error = null;
+    notifyListeners();
+  }
+
   Future<void> _loadPersistedFlags() async {
     _biometricEnabled = await _service.getBiometricEnabled();
     // Todo início "a frio" do app (fechado por completo) deve exigir biometria novamente.
