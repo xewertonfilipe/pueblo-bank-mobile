@@ -10,7 +10,7 @@ class FinancialEvolutionChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (provider.summaryLoading && provider.summaryItems.isEmpty) {
+    if (provider.summaryLoading) {
       return const Card(
         child: Padding(
           padding: EdgeInsets.all(12),

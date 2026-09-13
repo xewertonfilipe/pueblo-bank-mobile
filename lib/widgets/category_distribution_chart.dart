@@ -10,7 +10,7 @@ class CategoryDistributionChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (provider.summaryLoading && provider.summaryItems.isEmpty) {
+    if (provider.summaryLoading) {
       return const SizedBox(
         height: 220,
         child: Card(

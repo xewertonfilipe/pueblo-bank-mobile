@@ -10,7 +10,7 @@ class FinancialSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = provider.summaryLoading && provider.summaryItems.isEmpty;
+    final isLoading = provider.summaryLoading;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),

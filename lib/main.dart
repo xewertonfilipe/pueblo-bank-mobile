@@ -13,6 +13,9 @@ import 'screens/register_screen.dart';
 import 'screens/transaction_form_screen.dart';
 import 'screens/transactions_screen.dart';
 
+// Usado pelo Dashboard para saber quando volta a ficar visível na pilha de rotas.
+final routeObserver = RouteObserver<PageRoute<dynamic>>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -47,6 +50,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF075985)),
         useMaterial3: true,
       ),
+      navigatorObservers: [routeObserver],
       initialRoute: Routes.login,
       routes: {
         Routes.register: (context) => const RegisterScreen(),

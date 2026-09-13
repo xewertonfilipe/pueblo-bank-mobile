@@ -19,6 +19,8 @@ class TransactionProvider extends ChangeNotifier {
   bool _loadingMore = false;
   bool _hasMore = true;
   bool _summaryLoading = false;
+  bool _needsSummaryRefresh = false;
+  bool _shouldScrollToTop = false;
   String? _error;
 
   List<TransactionModel> get items => List.unmodifiable(_items);
@@ -29,7 +31,12 @@ class TransactionProvider extends ChangeNotifier {
   bool get loadingMore => _loadingMore;
   bool get hasMore => _hasMore;
   bool get summaryLoading => _summaryLoading;
+  bool get shouldScrollToTop => _shouldScrollToTop;
   String? get error => _error;
+
+  void clearScrollFlag() {
+    _shouldScrollToTop = false;
+  }
 
   double get deposits => _items.where((item) => item.isDeposit).fold<double>(0.0, (acc, item) => acc + item.amount);
   double get withdrawals => _items.where((item) => !item.isDeposit).fold<double>(0.0, (acc, item) => acc + item.amount);
@@ -65,6 +72,13 @@ class TransactionProvider extends ChangeNotifier {
       _summaryLoading = false;
       notifyListeners();
     }
+  }
+
+  // Só refaz a busca do resumo quando há uma alteração pendente de save/remove.
+  Future<void> refreshSummaryIfNeeded() async {
+    if (!_needsSummaryRefresh) return;
+    _needsSummaryRefresh = false;
+    await _loadSummary();
   }
 
   Future<void> loadFirstPage() async {
@@ -123,15 +137,16 @@ class TransactionProvider extends ChangeNotifier {
       await _service.update(_userId!, transaction);
       _items = _items.map((item) => item.id == transaction.id ? transaction : item).toList();
     }
+    _needsSummaryRefresh = true;
+    _shouldScrollToTop = true;
     notifyListeners();
-    await _loadSummary();
   }
 
   Future<void> remove(String id) async {
     if (_userId == null) return;
     await _service.delete(_userId!, id);
     _items = _items.where((item) => item.id != id).toList();
+    _needsSummaryRefresh = true;
     notifyListeners();
-    await _loadSummary();
   }
 }
