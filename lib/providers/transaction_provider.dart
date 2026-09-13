@@ -110,9 +110,9 @@ class TransactionProvider extends ChangeNotifier {
 
   Future<void> save(TransactionModel transaction) async {
     if (_userId == null) return;
-    if (transaction.id.isEmpty) {
+    if (transaction.createdAt == null) {
       final id = await _service.create(_userId!, transaction);
-      _items = [transaction.copyWith(id: id), ..._items];
+      _items = [transaction.copyWith(id: id, createdAt: DateTime.now()), ..._items];
     } else {
       await _service.update(_userId!, transaction);
       _items = _items.map((item) => item.id == transaction.id ? transaction : item).toList();

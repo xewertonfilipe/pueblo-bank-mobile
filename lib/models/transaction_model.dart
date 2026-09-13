@@ -10,6 +10,7 @@ class TransactionModel {
     required this.date,
     this.description = '',
     this.receiptUrl,
+    this.receiptPath,
     this.createdAt,
     this.updatedAt,
   });
@@ -20,6 +21,7 @@ class TransactionModel {
   final DateTime date;
   final String description;
   final String? receiptUrl;
+  final String? receiptPath;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -36,6 +38,7 @@ class TransactionModel {
       date: _readDate(data['date']) ?? DateTime.now(),
       description: data['description'] as String? ?? '',
       receiptUrl: data['receiptUrl'] as String?,
+      receiptPath: data['receiptPath'] as String?,
       createdAt: _readDate(data['createdAt']),
       updatedAt: _readDate(data['updatedAt']),
     );
@@ -48,6 +51,7 @@ class TransactionModel {
       'date': Timestamp.fromDate(date),
       'description': description,
       'receiptUrl': receiptUrl,
+      'receiptPath': receiptPath,
       'createdAt': createdAt == null ? FieldValue.serverTimestamp() : Timestamp.fromDate(createdAt!),
       'updatedAt': FieldValue.serverTimestamp(),
     };
@@ -60,6 +64,7 @@ class TransactionModel {
     DateTime? date,
     String? description,
     String? receiptUrl,
+    String? receiptPath,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -70,6 +75,7 @@ class TransactionModel {
       date: date ?? this.date,
       description: description ?? this.description,
       receiptUrl: receiptUrl ?? this.receiptUrl,
+      receiptPath: receiptPath ?? this.receiptPath,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

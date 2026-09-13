@@ -62,14 +62,28 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     setState(() => _saving = true);
     try {
       final amount = double.parse(_amount.text.replaceAll(',', '.'));
-      var transaction = TransactionModel(id: _existing?.id ?? '', amount: amount, category: _category, date: _date, description: _description.text.trim(), receiptUrl: _existing?.receiptUrl, createdAt: _existing?.createdAt);
+      final previousReceiptPath = _existing?.receiptPath;
+      String? newReceiptPath;
+      var transaction = TransactionModel(
+        id: _existing?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
+        amount: amount,
+        category: _category,
+        date: _date,
+        description: _description.text.trim(),
+        receiptUrl: _existing?.receiptUrl,
+        receiptPath: _existing?.receiptPath,
+        createdAt: _existing?.createdAt,
+      );
       if (_receipt != null) {
-        final id = transaction.id.isEmpty ? DateTime.now().microsecondsSinceEpoch.toString() : transaction.id;
-        final url = await StorageService().uploadReceipt(userId: userId, transactionId: id, file: _receipt!);
-        transaction = transaction.copyWith(id: id, receiptUrl: url);
+        final upload = await StorageService().uploadReceipt(userId: userId, transactionId: transaction.id, file: _receipt!);
+        transaction = transaction.copyWith(receiptUrl: upload.url, receiptPath: upload.path);
+        newReceiptPath = upload.path;
       }
       if (!mounted) return;
       await context.read<TransactionProvider>().save(transaction);
+      if (previousReceiptPath != null && newReceiptPath != null && previousReceiptPath != newReceiptPath) {
+        await StorageService().deleteReceiptByPath(previousReceiptPath);
+      }
       if (mounted) {
         final isDeposit = _category == TransactionCategory.deposit;
         final isNew = _existing == null;
@@ -170,6 +184,20 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               icon: const Icon(Icons.attach_file),
               label: Text(_receipt == null ? 'Anexar recibo' : 'Recibo selecionado'),
             ),
+            if (_existing?.receiptUrl != null) ...[
+              const SizedBox(height: 8),
+              Text('Comprovante anexado', style: Theme.of(context).textTheme.bodyMedium),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  _existing!.receiptUrl!,
+                  height: 180,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, error, stackTrace) => const Text('Não foi possível carregar o comprovante.'),
+                ),
+              ),
+            ],
             const SizedBox(height: 24),
             FilledButton(
               onPressed: _saving ? null : _save,

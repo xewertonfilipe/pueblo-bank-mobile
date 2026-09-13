@@ -41,7 +41,8 @@ class TransactionService {
   }
 
   Future<String> create(String userId, TransactionModel transaction) async {
-    final reference = await _collection(userId).add(transaction.toFirestore());
+    final reference = transaction.id.isEmpty ? _collection(userId).doc() : _collection(userId).doc(transaction.id);
+    await reference.set(transaction.toFirestore());
     return reference.id;
   }
 
