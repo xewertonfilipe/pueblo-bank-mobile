@@ -8,6 +8,7 @@ import '../routes.dart';
 import '../widgets/category_distribution_chart.dart';
 import '../widgets/financial_evolution_chart.dart';
 import '../widgets/financial_summary.dart';
+import '../widgets/loading_placeholder.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -71,7 +72,16 @@ class DashboardScreen extends StatelessWidget {
               icon: const Icon(Icons.receipt_long),
               label: const Text('Ver transações'),
             ),
-            if (recentItems.isNotEmpty) ...[
+            if (provider.summaryLoading && recentItems.isEmpty) ...[
+              const SizedBox(height: 28),
+              Text('Recentes', style: Theme.of(context).textTheme.titleMedium),
+              for (var i = 0; i < 3; i++)
+                const ListTile(
+                  leading: LoadingPlaceholder(width: 24, height: 24, borderRadius: BorderRadius.all(Radius.circular(12))),
+                  title: LoadingPlaceholder(width: 140, height: 14),
+                  trailing: LoadingPlaceholder(width: 60, height: 14),
+                ),
+            ] else if (recentItems.isNotEmpty) ...[
               const SizedBox(height: 28),
               Text('Recentes', style: Theme.of(context).textTheme.titleMedium),
               for (final item in recentItems)

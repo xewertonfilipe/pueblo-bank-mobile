@@ -18,6 +18,7 @@ class TransactionProvider extends ChangeNotifier {
   bool _loading = false;
   bool _loadingMore = false;
   bool _hasMore = true;
+  bool _summaryLoading = false;
   String? _error;
 
   List<TransactionModel> get items => List.unmodifiable(_items);
@@ -27,6 +28,7 @@ class TransactionProvider extends ChangeNotifier {
   bool get loading => _loading;
   bool get loadingMore => _loadingMore;
   bool get hasMore => _hasMore;
+  bool get summaryLoading => _summaryLoading;
   String? get error => _error;
 
   double get deposits => _items.where((item) => item.isDeposit).fold<double>(0.0, (acc, item) => acc + item.amount);
@@ -53,11 +55,15 @@ class TransactionProvider extends ChangeNotifier {
 
   Future<void> _loadSummary() async {
     if (_userId == null) return;
+    _summaryLoading = true;
+    notifyListeners();
     try {
       final page = await _service.fetchPage(userId: _userId!, limit: 1000);
       _summaryItems = page.items;
-      notifyListeners();
     } catch (_) {
+    } finally {
+      _summaryLoading = false;
+      notifyListeners();
     }
   }
 

@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../providers/transaction_provider.dart';
+import 'loading_placeholder.dart';
 
 class CategoryDistributionChart extends StatelessWidget {
   const CategoryDistributionChart({required this.provider, super.key});
@@ -9,6 +10,14 @@ class CategoryDistributionChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (provider.summaryLoading && provider.summaryItems.isEmpty) {
+      return const SizedBox(
+        height: 220,
+        child: Card(
+          child: Center(child: LoadingPlaceholder(width: 120, height: 120, borderRadius: BorderRadius.all(Radius.circular(60)))),
+        ),
+      );
+    }
     final total = provider.summaryDeposits + provider.summaryWithdrawals;
     if (total == 0) return const Card(child: SizedBox(height: 180, child: Center(child: Text('Ainda não há dados para exibir.'))));
     return SizedBox(

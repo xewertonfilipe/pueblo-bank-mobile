@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../providers/transaction_provider.dart';
+import 'loading_placeholder.dart';
 
 class FinancialEvolutionChart extends StatelessWidget {
   const FinancialEvolutionChart({required this.provider, super.key});
@@ -9,6 +10,17 @@ class FinancialEvolutionChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (provider.summaryLoading && provider.summaryItems.isEmpty) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: SizedBox(
+            height: 190,
+            child: Center(child: LoadingPlaceholder(width: 220, height: 4)),
+          ),
+        ),
+      );
+    }
     final ordered = [...provider.summaryItems]..sort((a, b) => a.date.compareTo(b.date));
     var balance = 0.0;
     final spots = <FlSpot>[];
