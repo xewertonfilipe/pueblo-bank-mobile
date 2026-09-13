@@ -55,6 +55,10 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     if (file != null) setState(() => _receipt = File(file.path));
   }
 
+  void _removeReceipt() {
+    setState(() => _receipt = null);
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final userId = context.read<AuthProvider>().user?.uid;
@@ -190,7 +194,33 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                 icon: const Icon(Icons.attach_file),
                 label: Text(_receipt == null ? 'Anexar recibo' : 'Recibo selecionado'),
               ),
-            if (_existing?.receiptUrl != null) ...[
+            if (_receipt != null) ...[
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(
+                  _receipt!,
+                  height: 180,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  TextButton.icon(
+                    onPressed: _pickReceipt,
+                    icon: const Icon(Icons.edit),
+                    label: const Text('Trocar'),
+                  ),
+                  TextButton.icon(
+                    onPressed: _removeReceipt,
+                    icon: const Icon(Icons.close),
+                    label: const Text('Remover'),
+                  ),
+                ],
+              ),
+            ],
+            if (_existing?.receiptUrl != null && _receipt == null) ...[
               const SizedBox(height: 8),
               Text('Comprovante anexado', style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 8),
@@ -202,6 +232,16 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                   fit: BoxFit.contain,
                   errorBuilder: (_, error, stackTrace) => const Text('Não foi possível carregar o comprovante.'),
                 ),
+              ),
+            ],
+            if (_existing != null &&
+                _category == TransactionCategory.deposit &&
+                _existing?.receiptUrl == null &&
+                _receipt == null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Nenhum comprovante anexado.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey),
               ),
             ],
             const SizedBox(height: 24),
