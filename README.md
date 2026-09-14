@@ -1,6 +1,6 @@
 # Pueblo Bank
 
-![CI](https://github.com/OWNER/pueblo-bank-mobile/actions/workflows/ci.yml/badge.svg)
+![CI](#)
 
 Aplicativo Flutter mobile para gerenciamento de transações financeiras, com autenticação,
 dashboard com gráficos, listagem paginada de transações e upload de recibos vinculados ao
