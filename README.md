@@ -1,7 +1,5 @@
 # Pueblo Bank
 
-![CI](#)
-
 Aplicativo Flutter mobile para gerenciamento de transações financeiras, com autenticação,
 dashboard com gráficos, listagem paginada de transações e upload de recibos vinculados ao
 usuário e à transação.
