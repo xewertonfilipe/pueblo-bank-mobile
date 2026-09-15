@@ -5,21 +5,24 @@ import '../app_colors.dart';
 class AppFeedback {
   const AppFeedback._();
 
-  static void showSuccess(BuildContext context, String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          backgroundColor: AppColors.success,
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.white),
-              const SizedBox(width: 8),
-              Expanded(child: Text(message)),
-            ],
+  static Future<void> showSuccess(BuildContext context, String message) async {
+    final messenger = ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar();
+    await messenger
+        .showSnackBar(
+          SnackBar(
+            duration: const Duration(seconds: 2),
+            backgroundColor: AppColors.success,
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(child: Text(message)),
+              ],
+            ),
           ),
-        ),
-      );
+        )
+        .closed;
   }
 
   static void showError(BuildContext context, String message) {

@@ -52,7 +52,9 @@ class _AppNavigationScreenState extends State<AppNavigationScreen> {
       ),
     );
     if (!mounted) return;
-    if (result == true || result == null) {
+    if (result == TransactionFormResult.goToSummary) {
+      _showSummaryAfterSave();
+    } else if (result == true || result == null) {
       setState(() {
         _contentIndex = previousIndex;
         _selectedIndex = previousIndex;

@@ -13,6 +13,8 @@ import '../widgets/app_feedback.dart';
 
 enum TransactionFormSource { newTransaction, summary, transactions }
 
+enum TransactionFormResult { goToSummary }
+
 class TransactionFormArguments {
   const TransactionFormArguments({
     required this.source,
@@ -139,10 +141,16 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             _date = DateTime.now();
             _receipt = null;
           });
-          AppFeedback.showSuccess(context, message);
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) _amountFocusNode.requestFocus();
-          });
+          FocusScope.of(context).unfocus();
+          await AppFeedback.showSuccess(context, message);
+          final createAnother = await _confirmCreateAnother();
+          if (mounted && createAnother) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) _amountFocusNode.requestFocus();
+            });
+          } else if (mounted) {
+            Navigator.pop(context, TransactionFormResult.goToSummary);
+          }
         } else {
           setState(() => _saving = false);
           Navigator.pop(context, true);
@@ -158,6 +166,28 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     } finally {
       if (mounted && !didCompleteSave) setState(() => _saving = false);
     }
+  }
+
+  Future<bool> _confirmCreateAnother() async {
+    final createAnother = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Nova transação'),
+        content: const Text('Deseja cadastrar outra transação?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Não'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Sim'),
+          ),
+        ],
+      ),
+    );
+    return createAnother == true;
   }
 
   @override

@@ -209,12 +209,42 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pump(const Duration(milliseconds: 100));
     expect(tester.takeException(), isNull);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+    expect(find.text('Deseja cadastrar outra transação?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Sim'));
     await tester.pumpAndSettle();
     expect(find.byType(TransactionFormScreen), findsOneWidget);
-    expect(find.text('Depositado com sucesso!'), findsOneWidget);
+    expect(find.text('Depositado com sucesso!'), findsNothing);
     expect(find.byType(TextFormField).first, findsOneWidget);
     expect(tester.widget<TextFormField>(find.byType(TextFormField).first)
         .controller
         ?.text, isEmpty);
+  });
+
+  testWidgets('envia ao resumo ao escolher nao apos novo cadastro',
+      (tester) async {
+    await tester.pumpWidget(buildAuthenticatedApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Nova transação'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).first, '50');
+    await tester.tap(find.widgetWithText(FilledButton, 'Salvar depósito'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Deseja cadastrar outra transação?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, 'Não'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Visão geral'), findsOneWidget);
+    expect(find.byType(TransactionFormScreen), findsNothing);
   });
 }
