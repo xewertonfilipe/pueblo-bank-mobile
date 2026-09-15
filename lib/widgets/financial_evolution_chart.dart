@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../app_typography.dart';
 import '../providers/transaction_provider.dart';
 import '../utils/brl_currency.dart';
 import 'loading_placeholder.dart';
@@ -38,6 +39,11 @@ class FinancialEvolutionChart extends StatelessWidget {
               height: 220,
               child: Center(child: Text('Ainda não há dados para exibir.'))));
     }
+    final theme = Theme.of(context);
+    final tooltipStyle = AppTypography.financialValue(
+      theme.textTheme.bodySmall,
+      color: Colors.white,
+    );
     return Card(
       clipBehavior: Clip.antiAlias,
       child: Padding(
@@ -61,7 +67,7 @@ class FinancialEvolutionChart extends StatelessWidget {
                       .map(
                         (spot) => LineTooltipItem(
                           'R\$ ${formatBrlCurrency(spot.y)}',
-                          const TextStyle(color: Colors.white),
+                          tooltipStyle,
                         ),
                       )
                       .toList(),

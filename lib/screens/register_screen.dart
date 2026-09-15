@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../app_colors.dart';
 import '../providers/auth_provider.dart';
 import '../routes.dart';
 import '../utils/auth_validators.dart';
@@ -79,7 +80,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
           const SizedBox(height: 24),
           if (auth.error != null)
-            Text(auth.error!, style: const TextStyle(color: Colors.red)),
+            Text(
+              auth.error!,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: AppColors.error),
+            ),
           const SizedBox(height: 12),
           FilledButton(
               onPressed: auth.loading ? null : _submit,

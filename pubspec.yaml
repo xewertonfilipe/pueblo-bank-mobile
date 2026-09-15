@@ -35,3 +35,10 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: Manrope
+      fonts:
+        - asset: assets/fonts/Manrope-Variable.ttf
+          weight: 100
+        - asset: assets/fonts/Manrope-Variable.ttf
+          weight: 900

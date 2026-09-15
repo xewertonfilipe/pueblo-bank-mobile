@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../app_colors.dart';
+import '../app_typography.dart';
 import '../main.dart';
 import '../models/transaction_model.dart';
 import '../providers/auth_provider.dart';
@@ -75,6 +77,7 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
   Widget build(BuildContext context) {
     final provider = context.watch<TransactionProvider>();
     final auth = context.read<AuthProvider>();
+    final theme = Theme.of(context);
     final recentItems = provider.summaryItems.take(3).toList();
 
     return Scaffold(
@@ -138,20 +141,23 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
           children: [
             Text(
               'Olá, ${auth.user?.email?.split('@').first ?? 'pessoa'}',
-              style: Theme.of(context).textTheme.titleLarge,
+              style: theme.textTheme.titleLarge,
             ),
             const SizedBox(height: 4),
-            const Text('Acompanhe o movimento da sua conta.'),
+            Text(
+              'Acompanhe o movimento da sua conta.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: 24),
             FinancialSummary(provider: provider),
             const SizedBox(height: 24),
-            Text('Distribuição',
-                style: Theme.of(context).textTheme.titleMedium),
+            Text('Distribuição', style: theme.textTheme.titleMedium),
             const SizedBox(height: 12),
             CategoryDistributionChart(provider: provider),
             const SizedBox(height: 24),
-            Text('Evolução financeira',
-                style: Theme.of(context).textTheme.titleMedium),
+            Text('Evolução financeira', style: theme.textTheme.titleMedium),
             const SizedBox(height: 12),
             FinancialEvolutionChart(provider: provider),
             const SizedBox(height: 24),
@@ -170,7 +176,7 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
             ),
             if (provider.summaryLoading) ...[
               const SizedBox(height: 28),
-              Text('Recentes', style: Theme.of(context).textTheme.titleMedium),
+              Text('Recentes', style: theme.textTheme.titleMedium),
               for (var i = 0; i < 3; i++)
                 const ListTile(
                   leading: LoadingPlaceholder(
@@ -182,7 +188,7 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                 ),
             ] else if (recentItems.isNotEmpty) ...[
               const SizedBox(height: 28),
-              Text('Recentes', style: Theme.of(context).textTheme.titleMedium),
+              Text('Recentes', style: theme.textTheme.titleMedium),
               for (final item in recentItems)
                 ListTile(
                   leading: Icon(
@@ -194,11 +200,16 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                     item.description.isEmpty
                         ? (item.isDeposit ? 'Depósito' : 'Saque')
                         : item.description,
+                    style: theme.textTheme.bodyMedium,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   trailing: Text(
                     'R\$ ${formatBrlCurrency(item.amount)}',
-                    style: TextStyle(
-                      color: item.isDeposit ? Colors.green : Colors.red,
+                    style: AppTypography.financialCompact(
+                      theme.textTheme,
+                      color:
+                          item.isDeposit ? AppColors.income : AppColors.expense,
                     ),
                   ),
                 ),

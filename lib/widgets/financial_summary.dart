@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../app_colors.dart';
+import '../app_typography.dart';
 import '../providers/transaction_provider.dart';
 import 'loading_placeholder.dart';
 
@@ -13,6 +15,7 @@ class FinancialSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final isLoading = provider.summaryLoading;
     return Card(
       child: Padding(
@@ -20,13 +23,13 @@ class FinancialSummary extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Saldo atual'),
+            Text('Saldo atual', style: theme.textTheme.titleSmall),
             const SizedBox(height: 6),
             isLoading
                 ? const LoadingPlaceholder(width: 140, height: 28)
                 : Text(
                     _brlFormat.format(provider.summaryBalance),
-                    style: Theme.of(context).textTheme.headlineMedium,
+                    style: AppTypography.financialPrimary(theme.textTheme),
                   ),
             const Divider(height: 28),
             Row(
@@ -36,14 +39,14 @@ class FinancialSummary extends StatelessWidget {
                   label: 'Depósitos',
                   value: provider.summaryDeposits,
                   format: _brlFormat,
-                  color: Colors.green,
+                  color: AppColors.income,
                   isLoading: isLoading,
                 ),
                 _SummaryItem(
                   label: 'Saques',
                   value: provider.summaryWithdrawals,
                   format: _brlFormat,
-                  color: Colors.red,
+                  color: AppColors.expense,
                   isLoading: isLoading,
                 ),
               ],
@@ -72,10 +75,11 @@ class _SummaryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label),
+        Text(label, style: theme.textTheme.labelMedium),
         if (isLoading)
           const Padding(
             padding: EdgeInsets.only(top: 2),
@@ -84,9 +88,9 @@ class _SummaryItem extends StatelessWidget {
         else
           Text(
             format.format(value),
-            style: TextStyle(
+            style: AppTypography.financialCompact(
+              theme.textTheme,
               color: color,
-              fontWeight: FontWeight.bold,
             ),
           ),
       ],

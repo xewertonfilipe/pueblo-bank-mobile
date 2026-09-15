@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../app_colors.dart';
+import '../app_typography.dart';
 import '../models/transaction_model.dart';
 import '../providers/transaction_provider.dart';
 import '../routes.dart';
@@ -151,6 +153,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<TransactionProvider>();
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Transações'),
@@ -215,15 +218,21 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                               item.description.isEmpty
                                   ? (item.isDeposit ? 'Depósito' : 'Saque')
                                   : item.description,
+                              style: theme.textTheme.bodyMedium,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                             subtitle: Text(
                               '${item.date.day.toString().padLeft(2, '0')}/${item.date.month.toString().padLeft(2, '0')}/${item.date.year}',
+                              style: theme.textTheme.bodySmall,
                             ),
                             trailing: Text(
                               'R\$ ${formatBrlCurrency(item.amount)}',
-                              style: TextStyle(
-                                color:
-                                    item.isDeposit ? Colors.green : Colors.red,
+                              style: AppTypography.financialCompact(
+                                theme.textTheme,
+                                color: item.isDeposit
+                                    ? AppColors.income
+                                    : AppColors.expense,
                               ),
                             ),
                             onTap: () => Navigator.pushNamed(

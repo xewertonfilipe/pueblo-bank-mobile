@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
+import 'app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/transaction_provider.dart';
 import 'routes.dart';
@@ -62,6 +63,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
   Widget _buildBootstrapScreen(AsyncSnapshot<void> snapshot) {
     return MaterialApp(
       title: 'Pueblo Bank',
+      theme: buildAppTheme(),
       home: SplashScreen(
         error: snapshot.hasError
             ? 'Não foi possível conectar. Verifique sua internet e tente novamente.'
@@ -111,10 +113,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'Pueblo Bank',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF075985)),
-        useMaterial3: true,
-      ),
+      theme: buildAppTheme(),
       navigatorObservers: [routeObserver],
       initialRoute: Routes.login,
       routes: {
