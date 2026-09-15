@@ -10,7 +10,9 @@ import '../utils/brl_currency.dart';
 import '../widgets/app_feedback.dart';
 
 class TransactionsScreen extends StatefulWidget {
-  const TransactionsScreen({super.key});
+  const TransactionsScreen({super.key, this.onTransactionSaved});
+
+  final VoidCallback? onTransactionSaved;
 
   @override
   State<TransactionsScreen> createState() => _TransactionsScreenState();
@@ -24,9 +26,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   @override
   void initState() {
     super.initState();
-    context
-        .read<TransactionProvider>()
-        .setFilters(startDate: null, endDate: null, category: null);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context
+          .read<TransactionProvider>()
+          .setFilters(startDate: null, endDate: null, category: null);
+    });
     _scrollController.addListener(() {
       if (!_scrollController.hasClients) return;
       final provider = context.read<TransactionProvider>();
@@ -148,6 +153,15 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         '${provider.startDate!.month.toString().padLeft(2, '0')} - '
         '${provider.endDate!.day.toString().padLeft(2, '0')}/'
         '${provider.endDate!.month.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _openTransactionForm({TransactionModel? transaction}) async {
+    final result = await Navigator.pushNamed(
+      context,
+      Routes.transactionForm,
+      arguments: transaction,
+    );
+    if (mounted && result == true) widget.onTransactionSaved?.call();
   }
 
   Widget _buildFilterBar(TransactionProvider provider) {
@@ -338,11 +352,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   padding: EdgeInsets.zero,
                   onSelected: (action) {
                     if (action == 'edit') {
-                      Navigator.pushNamed(
-                        context,
-                        Routes.transactionForm,
-                        arguments: item,
-                      );
+                      _openTransactionForm(transaction: item);
                     } else {
                       _confirmDelete(item);
                     }
@@ -362,11 +372,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             ],
           ),
         ),
-        onTap: () => Navigator.pushNamed(
-          context,
-          Routes.transactionForm,
-          arguments: item,
-        ),
+        onTap: () => _openTransactionForm(transaction: item),
       ),
     );
   }
@@ -448,11 +454,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           _buildFilterBar(provider),
           Expanded(child: _buildContent(provider)),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.pushNamed(context, Routes.transactionForm),
-        tooltip: 'Nova transação',
-        child: const Icon(Icons.add),
       ),
     );
   }

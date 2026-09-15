@@ -1,4 +1,3 @@
-import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
 
 import '../app_colors.dart';
@@ -7,15 +6,20 @@ class AppFeedback {
   const AppFeedback._();
 
   static void showSuccess(BuildContext context, String message) {
-    Flushbar(
-      message: message,
-      icon: const Icon(Icons.check_circle, color: Colors.white),
-      backgroundColor: AppColors.success,
-      duration: const Duration(seconds: 2),
-      flushbarPosition: FlushbarPosition.TOP,
-      margin: const EdgeInsets.all(8),
-      borderRadius: BorderRadius.circular(8),
-    ).show(context);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.success,
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(child: Text(message)),
+            ],
+          ),
+        ),
+      );
   }
 
   static void showError(BuildContext context, String message) {

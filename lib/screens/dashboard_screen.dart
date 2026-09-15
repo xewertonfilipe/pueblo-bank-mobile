@@ -16,7 +16,14 @@ import '../widgets/financial_summary.dart';
 import '../widgets/loading_placeholder.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  const DashboardScreen({
+    super.key,
+    this.onTransactionSaved,
+    this.onViewTransactions,
+  });
+
+  final VoidCallback? onTransactionSaved;
+  final VoidCallback? onViewTransactions;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -63,15 +70,34 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
     );
   }
 
+  Future<void> _openTransactionForm({TransactionModel? transaction}) async {
+    final result = await Navigator.pushNamed(
+      context,
+      Routes.transactionForm,
+      arguments: transaction,
+    );
+    if (mounted && result == true) widget.onTransactionSaved?.call();
+  }
+
+  void _openTransactions() {
+    if (widget.onViewTransactions != null) {
+      widget.onViewTransactions!();
+    } else {
+      Navigator.pushNamed(context, Routes.transactions);
+    }
+  }
+
   @override
   void didPopNext() {
     final provider = context.read<TransactionProvider>();
-    if (provider.shouldScrollToTop) {
-      provider.clearScrollFlag();
-      _scrollToTop().then((_) => provider.refreshSummaryIfNeeded());
-    } else {
-      provider.refreshSummaryIfNeeded();
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      if (provider.shouldScrollToTop) {
+        provider.clearScrollFlag();
+        await _scrollToTop();
+      }
+      if (mounted) await provider.refreshSummaryIfNeeded();
+    });
   }
 
   @override
@@ -163,15 +189,13 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
             FinancialEvolutionChart(provider: provider),
             const SizedBox(height: 24),
             FilledButton.icon(
-              onPressed: () =>
-                  Navigator.pushNamed(context, Routes.transactionForm),
+              onPressed: _openTransactionForm,
               icon: const Icon(Icons.add),
               label: const Text('Nova transação'),
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
-              onPressed: () =>
-                  Navigator.pushNamed(context, Routes.transactions),
+              onPressed: _openTransactions,
               icon: const Icon(Icons.receipt_long),
               label: const Text('Ver transações'),
             ),
@@ -236,8 +260,7 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                 title: 'Ainda não há transações para exibir.',
                 actionLabel: 'Nova transação',
                 actionIcon: Icons.add,
-                onAction: () =>
-                    Navigator.pushNamed(context, Routes.transactionForm),
+                onAction: _openTransactionForm,
               ),
             ],
           ],

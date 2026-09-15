@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../providers/transaction_provider.dart';
 import '../routes.dart';
 import '../screens/dashboard_screen.dart';
 import '../screens/transactions_screen.dart';
@@ -14,16 +16,43 @@ class AppNavigationScreen extends StatefulWidget {
 class _AppNavigationScreenState extends State<AppNavigationScreen> {
   int _selectedIndex = 0;
   int _contentIndex = 0;
+  bool _summaryNavigationScheduled = false;
+
+  void _showSummaryAfterSave() {
+    if (!mounted || _summaryNavigationScheduled) return;
+    _summaryNavigationScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _summaryNavigationScheduled = false;
+      if (!mounted) return;
+      setState(() {
+        _contentIndex = 0;
+        _selectedIndex = 0;
+      });
+      context.read<TransactionProvider>().refreshSummaryIfNeeded();
+    });
+  }
+
+  void _showTransactions() {
+    if (!mounted) return;
+    setState(() {
+      _contentIndex = 1;
+      _selectedIndex = 1;
+    });
+  }
 
   Future<void> _openNewTransaction() async {
     final previousIndex = _contentIndex;
     setState(() => _selectedIndex = 2);
-    await Navigator.pushNamed(context, Routes.transactionForm);
+    final result = await Navigator.pushNamed(context, Routes.transactionForm);
     if (!mounted) return;
-    setState(() {
-      _contentIndex = previousIndex;
-      _selectedIndex = previousIndex;
-    });
+    if (result == true) {
+      _showSummaryAfterSave();
+    } else {
+      setState(() {
+        _contentIndex = previousIndex;
+        _selectedIndex = previousIndex;
+      });
+    }
   }
 
   void _selectDestination(int index) {
@@ -35,6 +64,9 @@ class _AppNavigationScreenState extends State<AppNavigationScreen> {
       _selectedIndex = index;
       _contentIndex = index;
     });
+    if (index == 0) {
+      context.read<TransactionProvider>().refreshSummaryIfNeeded();
+    }
   }
 
   @override
@@ -42,9 +74,12 @@ class _AppNavigationScreenState extends State<AppNavigationScreen> {
     return Scaffold(
       body: IndexedStack(
         index: _contentIndex,
-        children: const [
-          DashboardScreen(),
-          TransactionsScreen(),
+        children: [
+          DashboardScreen(
+            onTransactionSaved: _showSummaryAfterSave,
+            onViewTransactions: _showTransactions,
+          ),
+          TransactionsScreen(onTransactionSaved: _showSummaryAfterSave),
         ],
       ),
       bottomNavigationBar: NavigationBar(

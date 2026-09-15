@@ -26,6 +26,19 @@ class _FakeBiometricService extends BiometricService {
   Future<bool> canUseBiometric() async => false;
 }
 
+class _FakeUser extends Fake implements User {
+  @override
+  String get email => 'test@example.com';
+
+  @override
+  String get uid => 'user-1';
+}
+
+class _AuthenticatedAuthService extends _FakeAuthService {
+  @override
+  User? get currentUser => _FakeUser();
+}
+
 class _FakeTransactionService extends TransactionService {
   @override
   Future<TransactionPage> fetchPage({
@@ -38,6 +51,33 @@ class _FakeTransactionService extends TransactionService {
   }) async {
     return const TransactionPage(items: [], cursor: null);
   }
+
+  @override
+  Future<String> create(String userId, TransactionModel transaction) async {
+    return 'new-id';
+  }
+}
+
+class _SuccessfulTransactionForm extends StatefulWidget {
+  const _SuccessfulTransactionForm();
+
+  @override
+  State<_SuccessfulTransactionForm> createState() =>
+      _SuccessfulTransactionFormState();
+}
+
+class _SuccessfulTransactionFormState
+    extends State<_SuccessfulTransactionForm> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Navigator.pop(context, true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
 void main() {
@@ -45,7 +85,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  Widget buildApp() {
+  Widget buildApp({WidgetBuilder? transactionFormBuilder}) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
@@ -58,6 +98,29 @@ void main() {
           create: (_) =>
               TransactionProvider(service: _FakeTransactionService()),
         ),
+      ],
+      child: MaterialApp(
+        home: const AppNavigationScreen(),
+        routes: {
+          Routes.transactionForm:
+              transactionFormBuilder ?? (_) => const TransactionFormScreen(),
+        },
+      ),
+    );
+  }
+
+  Widget buildAuthenticatedApp() {
+    final transactions = TransactionProvider(service: _FakeTransactionService())
+      ..setUser('user-1');
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(
+            service: _AuthenticatedAuthService(),
+            biometricService: _FakeBiometricService(),
+          ),
+        ),
+        ChangeNotifierProvider.value(value: transactions),
       ],
       child: MaterialApp(
         home: const AppNavigationScreen(),
@@ -82,6 +145,20 @@ void main() {
     expect(find.byType(NavigationBar), findsOneWidget);
   });
 
+  testWidgets('abre transacoes pela acao do resumo sem perder a barra',
+      (tester) async {
+    await tester.pumpWidget(buildApp());
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(ListView).first, const Offset(0, -500));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Ver transações'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Transações'), findsAtLeastNWidgets(2));
+    expect(find.byType(NavigationBar), findsOneWidget);
+  });
+
   testWidgets('abre nova transacao pelo destino de adicao', (tester) async {
     await tester.pumpWidget(buildApp());
     await tester.pumpAndSettle();
@@ -96,6 +173,43 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.text('Visão geral'), findsOneWidget);
+  });
+
+  testWidgets('retorna ao resumo quando a nova transacao e salva',
+      (tester) async {
+    await tester.pumpWidget(
+      buildApp(
+          transactionFormBuilder: (_) => const _SuccessfulTransactionForm()),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Transações'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nova transação'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Visão geral'), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
+  });
+
+  testWidgets('retorna ao resumo apos salvar no formulario real',
+      (tester) async {
+    await tester.pumpWidget(buildAuthenticatedApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Transações'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nova transação'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).first, '50');
+    await tester.tap(find.widgetWithText(FilledButton, 'Salvar depósito'));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(tester.takeException(), isNull);
+    await tester.pumpAndSettle();
     expect(find.text('Visão geral'), findsOneWidget);
   });
 }

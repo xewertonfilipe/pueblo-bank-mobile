@@ -74,6 +74,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     final userId = context.read<AuthProvider>().user?.uid;
     if (userId == null) return;
     setState(() => _saving = true);
+    var didCompleteSave = false;
     try {
       final amount = parseBrlCurrency(_amount.text);
       if (amount == null || amount <= 0) return;
@@ -106,15 +107,16 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       if (mounted) {
         final isDeposit = _category == TransactionCategory.deposit;
         final isNew = _existing == null;
-        final message = isNew
-            ? (isDeposit
-                ? 'Depositado com sucesso!'
-                : 'Saque realizado com sucesso!')
-            : 'Transação editada com sucesso!';
-        AppFeedback.showSuccess(context, message);
-        Future.delayed(const Duration(milliseconds: 2500), () {
-          if (mounted) Navigator.pop(context);
-        });
+        didCompleteSave = true;
+        setState(() => _saving = false);
+        AppFeedback.showSuccess(
+            context,
+            isNew
+                ? (isDeposit
+                    ? 'Depositado com sucesso!'
+                    : 'Saque realizado com sucesso!')
+                : 'Transação editada com sucesso!');
+        Navigator.pop(context, true);
       }
     } catch (_) {
       if (mounted) {
@@ -124,7 +126,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() => _saving = false);
+      if (mounted && !didCompleteSave) setState(() => _saving = false);
     }
   }
 

@@ -123,6 +123,7 @@ void main() {
     provider.setUser('user-1');
     await tester.pumpAndSettle();
 
+    expect(find.byType(FloatingActionButton), findsNothing);
     final deposit = tester.widget<Text>(find.text('R\$ 1.234,56'));
     final withdrawal = tester.widget<Text>(find.text('R\$ 234,56'));
 

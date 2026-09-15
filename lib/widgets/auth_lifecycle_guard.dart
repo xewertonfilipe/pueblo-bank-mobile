@@ -25,6 +25,7 @@ class _AuthLifecycleGuardState extends State<AuthLifecycleGuard>
   late final AuthProvider _auth;
   bool _wasInBackground = false;
   bool _redirectedToLogin = false;
+  bool _redirectScheduled = false;
   bool _contentObscured = false;
 
   @override
@@ -76,19 +77,23 @@ class _AuthLifecycleGuardState extends State<AuthLifecycleGuard>
   }
 
   Future<void> _redirectToLoginIfNeeded() async {
-    if (!mounted || _redirectedToLogin) return;
+    if (!mounted || _redirectedToLogin || _redirectScheduled) return;
     if (!_auth.hasUnlockableSession) return;
 
-    final navigator = widget.navigatorKey.currentState;
-    if (navigator == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        unawaited(_redirectToLoginIfNeeded());
-      });
-      return;
-    }
+    _redirectScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _redirectScheduled = false;
+      if (!mounted || _redirectedToLogin || !_auth.hasUnlockableSession) return;
 
-    _redirectedToLogin = true;
-    navigator.pushNamed(Routes.login, arguments: true);
+      final navigator = widget.navigatorKey.currentState;
+      if (navigator == null) {
+        unawaited(_redirectToLoginIfNeeded());
+        return;
+      }
+
+      _redirectedToLogin = true;
+      navigator.pushNamed(Routes.login, arguments: true);
+    });
   }
 
   @override

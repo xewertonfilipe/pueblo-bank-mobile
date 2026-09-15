@@ -75,6 +75,35 @@ class _FilterLoadingService extends TransactionService {
   }
 }
 
+class _SummaryRefreshService extends TransactionService {
+  var summaryCalls = 0;
+  final pendingSummary = Completer<TransactionPage>();
+
+  @override
+  Future<TransactionPage> fetchPage({
+    required String userId,
+    DateTime? startDate,
+    DateTime? endDate,
+    TransactionCategory? category,
+    dynamic cursor,
+    int limit = 10,
+  }) async {
+    if (limit != 1000) {
+      return const TransactionPage(items: [], cursor: null);
+    }
+    summaryCalls++;
+    if (summaryCalls == 1) {
+      return const TransactionPage(items: [], cursor: null);
+    }
+    return pendingSummary.future;
+  }
+
+  @override
+  Future<String> create(String userId, TransactionModel transaction) async {
+    return 'new-id';
+  }
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(FakeTransactionModel());
@@ -140,6 +169,49 @@ void main() {
 
     verify(() => service.create('user-1', any())).called(1);
     expect(provider.shouldScrollToTop, isTrue);
+  });
+
+  test('refresha o resumo uma vez após salvar e expõe loading', () async {
+    final summaryService = _SummaryRefreshService();
+    final summaryProvider = TransactionProvider(service: summaryService);
+
+    summaryProvider.setUser('user-1');
+    await Future<void>.delayed(Duration.zero);
+
+    await summaryProvider.save(
+      TransactionModel(
+        id: '',
+        amount: 50,
+        category: TransactionCategory.deposit,
+        date: DateTime(2026, 1, 2),
+      ),
+    );
+
+    final refresh = summaryProvider.refreshSummaryIfNeeded();
+    expect(summaryProvider.summaryLoading, isTrue);
+    expect(summaryService.summaryCalls, 2);
+
+    await summaryProvider.refreshSummaryIfNeeded();
+    expect(summaryService.summaryCalls, 2);
+
+    summaryService.pendingSummary.complete(
+      TransactionPage(
+        items: [
+          TransactionModel(
+            id: 'new-id',
+            amount: 50,
+            category: TransactionCategory.deposit,
+            date: DateTime(2026, 1, 2),
+          ),
+        ],
+        cursor: null,
+      ),
+    );
+    await refresh;
+
+    expect(summaryProvider.summaryLoading, isFalse);
+    expect(summaryProvider.summaryItems, hasLength(1));
+    expect(summaryProvider.summaryBalance, 50);
   });
 
   test('remove() exclui transação existente', () async {
