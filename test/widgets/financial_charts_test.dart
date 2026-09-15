@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pueblo_bank/models/transaction_model.dart';
@@ -27,6 +28,36 @@ class _ChartService extends TransactionService {
         TransactionModel(
           id: 'withdrawal-1',
           amount: 234.56,
+          category: TransactionCategory.withdrawal,
+          date: DateTime(2026, 9, 13),
+        ),
+      ],
+      cursor: null,
+    );
+  }
+}
+
+class _LargeValueChartService extends TransactionService {
+  @override
+  Future<TransactionPage> fetchPage({
+    required String userId,
+    DateTime? startDate,
+    DateTime? endDate,
+    TransactionCategory? category,
+    dynamic cursor,
+    int limit = 20,
+  }) async {
+    return TransactionPage(
+      items: [
+        TransactionModel(
+          id: 'large-deposit',
+          amount: 2500000,
+          category: TransactionCategory.deposit,
+          date: DateTime(2026, 9, 14),
+        ),
+        TransactionModel(
+          id: 'large-withdrawal',
+          amount: 4000000,
           category: TransactionCategory.withdrawal,
           date: DateTime(2026, 9, 13),
         ),
@@ -82,5 +113,48 @@ void main() {
 
     expect(find.bySemanticsLabel('Distribuição financeira'), findsOneWidget);
     expect(find.bySemanticsLabel('Evolução financeira'), findsOneWidget);
+  });
+
+  testWidgets('mantem o grafico estavel com valores grandes e saldo negativo',
+      (tester) async {
+    final provider =
+        TransactionProvider(service: _LargeValueChartService());
+    provider.setUser('user-1');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: FinancialEvolutionChart(provider: provider),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsLabel('Evolução financeira'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('mantem o tooltip dentro do grafico no ultimo ponto',
+      (tester) async {
+    final provider = TransactionProvider(service: _ChartService());
+    provider.setUser('user-1');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: FinancialEvolutionChart(provider: provider),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final chartRect = tester.getRect(find.byType(LineChart));
+    await tester.dragFrom(
+      Offset(chartRect.left + 8, chartRect.center.dy),
+      Offset(chartRect.width - 16, 0),
+    );
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
   });
 }
