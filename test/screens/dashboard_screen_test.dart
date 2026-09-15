@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:pueblo_bank/providers/auth_provider.dart';
 import 'package:pueblo_bank/providers/transaction_provider.dart';
 import 'package:pueblo_bank/screens/dashboard_screen.dart';
+import 'package:pueblo_bank/screens/transaction_form_screen.dart';
+import 'package:pueblo_bank/routes.dart';
 import 'package:pueblo_bank/services/auth_service.dart';
 import 'package:pueblo_bank/services/biometric_service.dart';
 import 'package:pueblo_bank/services/transaction_service.dart';
@@ -61,7 +63,8 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('exibe depósitos em verde e saques em vermelho', (tester) async {
+  testWidgets('exibe recentes com cores e abre a edição ao tocar',
+      (tester) async {
     final transactionProvider =
         TransactionProvider(service: _FakeTransactionService());
     transactionProvider.setUser('user-1');
@@ -77,7 +80,12 @@ void main() {
           ),
           ChangeNotifierProvider.value(value: transactionProvider),
         ],
-        child: const MaterialApp(home: DashboardScreen()),
+        child: MaterialApp(
+          home: const DashboardScreen(),
+          routes: {
+            Routes.transactionForm: (_) => const TransactionFormScreen(),
+          },
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -92,5 +100,10 @@ void main() {
     expect(withdrawal.style?.color, Colors.red);
     expect(find.text('Entrada'), findsOneWidget);
     expect(find.text('Saída'), findsOneWidget);
+
+    await tester.tap(find.text('Entrada'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Editar transação'), findsOneWidget);
   });
 }

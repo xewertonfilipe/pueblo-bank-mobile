@@ -22,6 +22,7 @@ class TransactionFormScreen extends StatefulWidget {
 class _TransactionFormScreenState extends State<TransactionFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _amount = TextEditingController();
+  final _amountFocusNode = FocusNode();
   final _description = TextEditingController();
   final _picker = ImagePicker();
   TransactionModel? _existing;
@@ -29,6 +30,14 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   DateTime _date = DateTime.now();
   File? _receipt;
   bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _existing == null) _amountFocusNode.requestFocus();
+    });
+  }
 
   @override
   void didChangeDependencies() {
@@ -47,6 +56,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   @override
   void dispose() {
     _amount.dispose();
+    _amountFocusNode.dispose();
     _description.dispose();
     super.dispose();
   }
@@ -148,6 +158,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
           children: [
             TextFormField(
               controller: _amount,
+              focusNode: _amountFocusNode,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
               inputFormatters: const [BrlCurrencyInputFormatter()],
@@ -161,28 +172,28 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               },
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<TransactionCategory>(
-              initialValue: _category,
-              decoration: const InputDecoration(labelText: 'Categoria'),
-              items: const [
-                DropdownMenuItem(
+            SegmentedButton<TransactionCategory>(
+              segments: const [
+                ButtonSegment(
                   value: TransactionCategory.deposit,
-                  child: Text('Depósito'),
+                  icon: Icon(Icons.arrow_downward),
+                  label: Text('Depósito'),
                 ),
-                DropdownMenuItem(
+                ButtonSegment(
                   value: TransactionCategory.withdrawal,
-                  child: Text('Saque'),
+                  icon: Icon(Icons.arrow_upward),
+                  label: Text('Saque'),
                 ),
               ],
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    _category = value;
-                    if (value == TransactionCategory.withdrawal) {
-                      _receipt = null;
-                    }
-                  });
-                }
+              selected: {_category},
+              onSelectionChanged: (selection) {
+                final value = selection.first;
+                setState(() {
+                  _category = value;
+                  if (value == TransactionCategory.withdrawal) {
+                    _receipt = null;
+                  }
+                });
               },
             ),
             const SizedBox(height: 16),
@@ -280,7 +291,13 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                       width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Salvar'),
+                  : Text(
+                      _existing == null
+                          ? _category == TransactionCategory.deposit
+                              ? 'Salvar depósito'
+                              : 'Salvar saque'
+                          : 'Salvar alterações',
+                    ),
             ),
           ],
         ),

@@ -97,6 +97,89 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     }
   }
 
+  void _setCategory(TransactionCategory? category) {
+    final provider = context.read<TransactionProvider>();
+    provider.setFilters(
+      startDate: provider.startDate,
+      endDate: provider.endDate,
+      category: category,
+    );
+  }
+
+  void _clearFilters() {
+    context.read<TransactionProvider>().setFilters();
+  }
+
+  String _dateRangeLabel(TransactionProvider provider) {
+    if (provider.startDate == null || provider.endDate == null) {
+      return 'Período';
+    }
+    return '${provider.startDate!.day.toString().padLeft(2, '0')}/'
+        '${provider.startDate!.month.toString().padLeft(2, '0')} - '
+        '${provider.endDate!.day.toString().padLeft(2, '0')}/'
+        '${provider.endDate!.month.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildFilterBar(TransactionProvider provider) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                FilterChip(
+                  label: const Text('Todas'),
+                  selected: provider.category == null,
+                  onSelected: (_) => _setCategory(null),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: const Text('Depósitos'),
+                  selected: provider.category == TransactionCategory.deposit,
+                  onSelected: (_) => _setCategory(TransactionCategory.deposit),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: const Text('Saques'),
+                  selected: provider.category == TransactionCategory.withdrawal,
+                  onSelected: (_) =>
+                      _setCategory(TransactionCategory.withdrawal),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  avatar: const Icon(Icons.date_range, size: 18),
+                  label: Text(_dateRangeLabel(provider)),
+                  selected:
+                      provider.startDate != null && provider.endDate != null,
+                  onSelected: (_) => _pickDateRange(),
+                ),
+                if (provider.hasActiveFilters) ...[
+                  const SizedBox(width: 8),
+                  TextButton.icon(
+                    onPressed: _clearFilters,
+                    icon: const Icon(Icons.clear),
+                    label: const Text('Limpar filtros'),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Filtros: ${provider.filterSummary}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLoadingIndicator(TransactionProvider provider) {
     if (provider.loadingMore) {
       if (provider.error != null && provider.error!.contains('mais')) {
@@ -150,100 +233,124 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     return const SizedBox.shrink();
   }
 
+  Widget _buildContent(TransactionProvider provider) {
+    final theme = Theme.of(context);
+    if (provider.loading && provider.items.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (provider.error != null && provider.items.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off, size: 40),
+              const SizedBox(height: 12),
+              Text(provider.error!, textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: provider.loadFirstPage,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Tentar novamente'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (provider.items.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          const SizedBox(height: 180),
+          const Center(child: Text('Nenhuma transação encontrada.')),
+          if (provider.hasActiveFilters) ...[
+            const SizedBox(height: 16),
+            Center(
+              child: OutlinedButton.icon(
+                onPressed: _clearFilters,
+                icon: const Icon(Icons.clear),
+                label: const Text('Limpar filtros'),
+              ),
+            ),
+          ],
+        ],
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: provider.loadFirstPage,
+      child: Listener(
+        onPointerDown: _handlePointerDown,
+        onPointerMove: (event) => _handlePointerMove(event, provider),
+        onPointerUp: _handlePointerUp,
+        onPointerCancel: _handlePointerUp,
+        child: ListView.builder(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          itemCount: provider.items.length + 1,
+          itemBuilder: (_, index) {
+            if (index == provider.items.length) {
+              return _buildLoadingIndicator(provider);
+            }
+            final item = provider.items[index];
+            return ListTile(
+              leading: CircleAvatar(
+                child: Icon(
+                  item.isDeposit ? Icons.arrow_downward : Icons.arrow_upward,
+                ),
+              ),
+              title: Text(
+                item.description.isEmpty
+                    ? (item.isDeposit ? 'Depósito' : 'Saque')
+                    : item.description,
+                style: theme.textTheme.bodyMedium,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Text(
+                '${item.date.day.toString().padLeft(2, '0')}/${item.date.month.toString().padLeft(2, '0')}/${item.date.year}',
+                style: theme.textTheme.bodySmall,
+              ),
+              trailing: Text(
+                'R\$ ${formatBrlCurrency(item.amount)}',
+                style: AppTypography.financialCompact(
+                  theme.textTheme,
+                  color: item.isDeposit ? AppColors.income : AppColors.expense,
+                ),
+              ),
+              onTap: () => Navigator.pushNamed(
+                context,
+                Routes.transactionForm,
+                arguments: item,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<TransactionProvider>();
-    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Transações'),
         actions: [
           IconButton(
-            onPressed: _pickDateRange,
-            icon: const Icon(Icons.date_range),
-          ),
-          PopupMenuButton<String>(
-            onSelected: (value) => provider.setFilters(
-              startDate: provider.startDate,
-              endDate: provider.endDate,
-              category: value == 'all'
-                  ? null
-                  : value == 'deposit'
-                      ? TransactionCategory.deposit
-                      : TransactionCategory.withdrawal,
-            ),
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'all', child: Text('Todas')),
-              PopupMenuItem(value: 'deposit', child: Text('Depósitos')),
-              PopupMenuItem(value: 'withdrawal', child: Text('Saques')),
-            ],
+            onPressed: provider.loadFirstPage,
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Atualizar transações',
           ),
         ],
       ),
-      body: provider.loading && provider.items.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : provider.error != null && provider.items.isEmpty
-              ? Center(child: Text(provider.error!))
-              : provider.items.isEmpty
-                  ? ListView(
-                      children: const [
-                        SizedBox(height: 240),
-                        Center(child: Text('Nenhuma transação encontrada.')),
-                      ],
-                    )
-                  : Listener(
-                      onPointerDown: _handlePointerDown,
-                      onPointerMove: (event) =>
-                          _handlePointerMove(event, provider),
-                      onPointerUp: _handlePointerUp,
-                      onPointerCancel: _handlePointerUp,
-                      child: ListView.builder(
-                        controller: _scrollController,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        itemCount: provider.items.length + 1,
-                        itemBuilder: (_, index) {
-                          if (index == provider.items.length) {
-                            return _buildLoadingIndicator(provider);
-                          }
-                          final item = provider.items[index];
-                          return ListTile(
-                            leading: CircleAvatar(
-                              child: Icon(
-                                item.isDeposit
-                                    ? Icons.arrow_downward
-                                    : Icons.arrow_upward,
-                              ),
-                            ),
-                            title: Text(
-                              item.description.isEmpty
-                                  ? (item.isDeposit ? 'Depósito' : 'Saque')
-                                  : item.description,
-                              style: theme.textTheme.bodyMedium,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            subtitle: Text(
-                              '${item.date.day.toString().padLeft(2, '0')}/${item.date.month.toString().padLeft(2, '0')}/${item.date.year}',
-                              style: theme.textTheme.bodySmall,
-                            ),
-                            trailing: Text(
-                              'R\$ ${formatBrlCurrency(item.amount)}',
-                              style: AppTypography.financialCompact(
-                                theme.textTheme,
-                                color: item.isDeposit
-                                    ? AppColors.income
-                                    : AppColors.expense,
-                              ),
-                            ),
-                            onTap: () => Navigator.pushNamed(
-                              context,
-                              Routes.transactionForm,
-                              arguments: item,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+      body: Column(
+        children: [
+          _buildFilterBar(provider),
+          Expanded(child: _buildContent(provider)),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.pushNamed(context, Routes.transactionForm),
         child: const Icon(Icons.add),

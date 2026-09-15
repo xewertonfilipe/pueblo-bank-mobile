@@ -30,13 +30,15 @@ void main() {
 
   test('loadFirstPage popula items a partir do service', () async {
     when(() => service.fetchPage(
-          userId: any(named: 'userId'),
-          startDate: any(named: 'startDate'),
-          endDate: any(named: 'endDate'),
-          category: any(named: 'category'),
-          cursor: any(named: 'cursor'),
-          limit: any(named: 'limit'),
-        )).thenAnswer((_) async => TransactionPage(items: [sampleTransaction], cursor: null));
+              userId: any(named: 'userId'),
+              startDate: any(named: 'startDate'),
+              endDate: any(named: 'endDate'),
+              category: any(named: 'category'),
+              cursor: any(named: 'cursor'),
+              limit: any(named: 'limit'),
+            ))
+        .thenAnswer((_) async =>
+            TransactionPage(items: [sampleTransaction], cursor: null));
 
     provider.setUser('user-1');
     await provider.loadFirstPage();
@@ -47,13 +49,15 @@ void main() {
 
   test('save() cria nova transação e marca refresh/scroll pendentes', () async {
     when(() => service.fetchPage(
-          userId: any(named: 'userId'),
-          startDate: any(named: 'startDate'),
-          endDate: any(named: 'endDate'),
-          category: any(named: 'category'),
-          cursor: any(named: 'cursor'),
-          limit: any(named: 'limit'),
-        )).thenAnswer((_) async => const TransactionPage(items: [], cursor: null));
+              userId: any(named: 'userId'),
+              startDate: any(named: 'startDate'),
+              endDate: any(named: 'endDate'),
+              category: any(named: 'category'),
+              cursor: any(named: 'cursor'),
+              limit: any(named: 'limit'),
+            ))
+        .thenAnswer(
+            (_) async => const TransactionPage(items: [], cursor: null));
     when(() => service.create(any(), any())).thenAnswer((_) async => 'new-id');
 
     provider.setUser('user-1');
@@ -73,13 +77,15 @@ void main() {
 
   test('remove() exclui transação existente', () async {
     when(() => service.fetchPage(
-          userId: any(named: 'userId'),
-          startDate: any(named: 'startDate'),
-          endDate: any(named: 'endDate'),
-          category: any(named: 'category'),
-          cursor: any(named: 'cursor'),
-          limit: any(named: 'limit'),
-        )).thenAnswer((_) async => TransactionPage(items: [sampleTransaction], cursor: null));
+              userId: any(named: 'userId'),
+              startDate: any(named: 'startDate'),
+              endDate: any(named: 'endDate'),
+              category: any(named: 'category'),
+              cursor: any(named: 'cursor'),
+              limit: any(named: 'limit'),
+            ))
+        .thenAnswer((_) async =>
+            TransactionPage(items: [sampleTransaction], cursor: null));
     when(() => service.delete(any(), any())).thenAnswer((_) async {});
 
     provider.setUser('user-1');
@@ -89,5 +95,24 @@ void main() {
 
     verify(() => service.delete('user-1', '1')).called(1);
     expect(provider.items, isEmpty);
+  });
+
+  test('expõe resumo dos filtros ativos', () {
+    final startDate = DateTime(2026, 9, 1);
+    final endDate = DateTime(2026, 9, 15);
+
+    provider.setFilters(
+      startDate: startDate,
+      endDate: endDate,
+      category: TransactionCategory.deposit,
+    );
+
+    expect(provider.hasActiveFilters, isTrue);
+    expect(provider.filterSummary, 'Depósitos · 01/09/2026 a 15/09/2026');
+
+    provider.setFilters();
+
+    expect(provider.hasActiveFilters, isFalse);
+    expect(provider.filterSummary, 'Todas as transações');
   });
 }

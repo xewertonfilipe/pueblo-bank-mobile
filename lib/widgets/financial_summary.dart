@@ -31,6 +31,15 @@ class FinancialSummary extends StatelessWidget {
                     _brlFormat.format(provider.summaryBalance),
                     style: AppTypography.financialPrimary(theme.textTheme),
                   ),
+            if (!isLoading && provider.summaryUpdatedAt != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Atualizado agora',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
             const Divider(height: 28),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

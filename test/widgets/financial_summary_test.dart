@@ -63,5 +63,6 @@ void main() {
     expect(currencyText('1.234,56'), findsOneWidget);
     expect(currencyText('234,56'), findsOneWidget);
     expect(find.textContaining('1000.00'), findsNothing);
+    expect(find.text('Atualizado agora'), findsOneWidget);
   });
 }

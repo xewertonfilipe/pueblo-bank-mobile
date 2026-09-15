@@ -212,6 +212,11 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                           item.isDeposit ? AppColors.income : AppColors.expense,
                     ),
                   ),
+                  onTap: () => Navigator.pushNamed(
+                    context,
+                    Routes.transactionForm,
+                    arguments: item,
+                  ),
                 ),
             ],
           ],

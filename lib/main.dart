@@ -8,13 +8,13 @@ import 'app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/transaction_provider.dart';
 import 'routes.dart';
-import 'screens/dashboard_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/transaction_form_screen.dart';
 import 'screens/transactions_screen.dart';
 import 'widgets/auth_lifecycle_guard.dart';
+import 'widgets/app_navigation.dart';
 
 // Usado pelo Dashboard para saber quando volta a ficar visível na pilha de rotas.
 final routeObserver = RouteObserver<PageRoute<dynamic>>();
@@ -120,7 +120,7 @@ class MyApp extends StatelessWidget {
         Routes.splash: (context) => const SplashScreen(),
         Routes.register: (context) => const RegisterScreen(),
         Routes.login: (context) => const LoginScreen(),
-        Routes.dashboard: (context) => const DashboardScreen(),
+        Routes.dashboard: (context) => const AppNavigationScreen(),
         Routes.transactions: (context) => const TransactionsScreen(),
         Routes.transactionForm: (context) => const TransactionFormScreen(),
       },

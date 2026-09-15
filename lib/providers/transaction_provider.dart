@@ -5,7 +5,8 @@ import '../models/transaction_model.dart';
 import '../services/transaction_service.dart';
 
 class TransactionProvider extends ChangeNotifier {
-  TransactionProvider({TransactionService? service}) : _service = service ?? TransactionService();
+  TransactionProvider({TransactionService? service})
+      : _service = service ?? TransactionService();
 
   final TransactionService _service;
   String? _userId;
@@ -19,6 +20,7 @@ class TransactionProvider extends ChangeNotifier {
   bool _loadingMore = false;
   bool _hasMore = true;
   bool _summaryLoading = false;
+  DateTime? _summaryUpdatedAt;
   bool _needsSummaryRefresh = false;
   bool _shouldScrollToTop = false;
   String? _error;
@@ -31,20 +33,41 @@ class TransactionProvider extends ChangeNotifier {
   bool get loadingMore => _loadingMore;
   bool get hasMore => _hasMore;
   bool get summaryLoading => _summaryLoading;
+  DateTime? get summaryUpdatedAt => _summaryUpdatedAt;
   bool get shouldScrollToTop => _shouldScrollToTop;
   String? get error => _error;
+  bool get hasActiveFilters =>
+      _startDate != null || _endDate != null || _category != null;
+
+  String get filterSummary {
+    final filters = <String>[];
+    if (_category == TransactionCategory.deposit) filters.add('Depósitos');
+    if (_category == TransactionCategory.withdrawal) filters.add('Saques');
+    if (_startDate != null && _endDate != null) {
+      filters.add('${_formatDate(_startDate!)} a ${_formatDate(_endDate!)}');
+    }
+    return filters.isEmpty ? 'Todas as transações' : filters.join(' · ');
+  }
 
   void clearScrollFlag() {
     _shouldScrollToTop = false;
   }
 
-  double get deposits => _items.where((item) => item.isDeposit).fold<double>(0.0, (acc, item) => acc + item.amount);
-  double get withdrawals => _items.where((item) => !item.isDeposit).fold<double>(0.0, (acc, item) => acc + item.amount);
+  double get deposits => _items
+      .where((item) => item.isDeposit)
+      .fold<double>(0.0, (acc, item) => acc + item.amount);
+  double get withdrawals => _items
+      .where((item) => !item.isDeposit)
+      .fold<double>(0.0, (acc, item) => acc + item.amount);
   double get balance => deposits - withdrawals;
 
   List<TransactionModel> get summaryItems => List.unmodifiable(_summaryItems);
-  double get summaryDeposits => _summaryItems.where((item) => item.isDeposit).fold<double>(0.0, (acc, item) => acc + item.amount);
-  double get summaryWithdrawals => _summaryItems.where((item) => !item.isDeposit).fold<double>(0.0, (acc, item) => acc + item.amount);
+  double get summaryDeposits => _summaryItems
+      .where((item) => item.isDeposit)
+      .fold<double>(0.0, (acc, item) => acc + item.amount);
+  double get summaryWithdrawals => _summaryItems
+      .where((item) => !item.isDeposit)
+      .fold<double>(0.0, (acc, item) => acc + item.amount);
   double get summaryBalance => summaryDeposits - summaryWithdrawals;
 
   void setUser(String? userId) {
@@ -52,6 +75,7 @@ class TransactionProvider extends ChangeNotifier {
     _userId = userId;
     _items = [];
     _summaryItems = [];
+    _summaryUpdatedAt = null;
     _cursor = null;
     _hasMore = true;
     if (userId != null) {
@@ -67,6 +91,7 @@ class TransactionProvider extends ChangeNotifier {
     try {
       final page = await _service.fetchPage(userId: _userId!, limit: 1000);
       _summaryItems = page.items;
+      _summaryUpdatedAt = DateTime.now();
     } catch (_) {
     } finally {
       _summaryLoading = false;
@@ -89,7 +114,11 @@ class TransactionProvider extends ChangeNotifier {
     _hasMore = true;
     notifyListeners();
     try {
-      final page = await _service.fetchPage(userId: _userId!, startDate: _startDate, endDate: _endDate, category: _category);
+      final page = await _service.fetchPage(
+          userId: _userId!,
+          startDate: _startDate,
+          endDate: _endDate,
+          category: _category);
       _items = page.items;
       _cursor = page.cursor;
       _hasMore = page.items.length >= 10;
@@ -109,7 +138,12 @@ class TransactionProvider extends ChangeNotifier {
     _loadingMore = true;
     notifyListeners();
     try {
-      final page = await _service.fetchPage(userId: _userId!, startDate: _startDate, endDate: _endDate, category: _category, cursor: _cursor);
+      final page = await _service.fetchPage(
+          userId: _userId!,
+          startDate: _startDate,
+          endDate: _endDate,
+          category: _category,
+          cursor: _cursor);
       _items = [..._items, ...page.items];
       _cursor = page.cursor;
       _hasMore = page.items.length >= 10;
@@ -121,21 +155,33 @@ class TransactionProvider extends ChangeNotifier {
     }
   }
 
-  void setFilters({DateTime? startDate, DateTime? endDate, TransactionCategory? category}) {
+  void setFilters(
+      {DateTime? startDate, DateTime? endDate, TransactionCategory? category}) {
     _startDate = startDate;
     _endDate = endDate;
     _category = category;
     loadFirstPage();
   }
 
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/'
+        '${date.month.toString().padLeft(2, '0')}/'
+        '${date.year}';
+  }
+
   Future<void> save(TransactionModel transaction) async {
     if (_userId == null) return;
     if (transaction.createdAt == null) {
       final id = await _service.create(_userId!, transaction);
-      _items = [transaction.copyWith(id: id, createdAt: DateTime.now()), ..._items];
+      _items = [
+        transaction.copyWith(id: id, createdAt: DateTime.now()),
+        ..._items
+      ];
     } else {
       await _service.update(_userId!, transaction);
-      _items = _items.map((item) => item.id == transaction.id ? transaction : item).toList();
+      _items = _items
+          .map((item) => item.id == transaction.id ? transaction : item)
+          .toList();
     }
     _needsSummaryRefresh = true;
     _shouldScrollToTop = true;

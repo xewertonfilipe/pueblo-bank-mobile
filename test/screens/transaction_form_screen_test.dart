@@ -21,7 +21,7 @@ void main() {
   testWidgets('valida valor vazio', (tester) async {
     await tester.pumpWidget(buildApp());
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Salvar'));
+    await tester.tap(find.byType(FilledButton));
     await tester.pump();
 
     expect(find.text('Informe um valor positivo.'), findsOneWidget);

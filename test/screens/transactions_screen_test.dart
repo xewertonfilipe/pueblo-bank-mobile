@@ -38,6 +38,20 @@ class _FakeTransactionService extends TransactionService {
   }
 }
 
+class _EmptyTransactionService extends TransactionService {
+  @override
+  Future<TransactionPage> fetchPage({
+    required String userId,
+    DateTime? startDate,
+    DateTime? endDate,
+    TransactionCategory? category,
+    dynamic cursor,
+    int limit = 10,
+  }) async {
+    return const TransactionPage(items: [], cursor: null);
+  }
+}
+
 void main() {
   testWidgets('exibe transações no formato brasileiro e com cores', (
     tester,
@@ -60,5 +74,53 @@ void main() {
     expect(withdrawal.style?.color, Colors.red);
     expect(find.text('Entrada'), findsOneWidget);
     expect(find.text('Saída'), findsOneWidget);
+  });
+
+  testWidgets('permite selecionar e limpar o filtro de categoria', (
+    tester,
+  ) async {
+    final provider = TransactionProvider(service: _FakeTransactionService());
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const MaterialApp(home: TransactionsScreen()),
+      ),
+    );
+    provider.setUser('user-1');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Depósitos'));
+    await tester.pumpAndSettle();
+
+    expect(provider.category, TransactionCategory.deposit);
+    expect(find.text('Filtros: Depósitos'), findsOneWidget);
+    expect(find.text('Limpar filtros'), findsOneWidget);
+
+    await tester.tap(find.text('Limpar filtros'));
+    await tester.pumpAndSettle();
+
+    expect(provider.category, isNull);
+    expect(find.text('Filtros: Todas as transações'), findsOneWidget);
+  });
+
+  testWidgets('oferece limpar filtros quando não há resultados',
+      (tester) async {
+    final provider = TransactionProvider(service: _EmptyTransactionService());
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const MaterialApp(home: TransactionsScreen()),
+      ),
+    );
+    provider.setUser('user-1');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Depósitos'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nenhuma transação encontrada.'), findsOneWidget);
+    expect(find.text('Limpar filtros'), findsNWidgets(2));
   });
 }
