@@ -105,7 +105,6 @@ class TransactionProvider extends ChangeNotifier {
     }
   }
 
-  // Só refaz a busca do resumo quando há uma alteração pendente de save/remove.
   Future<void> refreshSummaryIfNeeded() async {
     final inFlight = _summaryRefreshInFlight;
     if (inFlight != null) {

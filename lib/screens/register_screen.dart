@@ -23,7 +23,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void initState() {
     super.initState();
-    // Evita mostrar um erro deixado por uma tentativa anterior em outra tela.
     WidgetsBinding.instance
         .addPostFrameCallback((_) => context.read<AuthProvider>().clearError());
   }

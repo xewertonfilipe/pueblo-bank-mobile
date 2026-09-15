@@ -9,7 +9,6 @@ import 'package:pueblo_bank/services/biometric_service.dart';
 import 'package:pueblo_bank/utils/auth_validators.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Evita tocar FirebaseAuth.instance durante os testes de widget.
 class FakeAuthService extends AuthService {
   @override
   Stream<User?> get authStateChanges => const Stream.empty();
@@ -18,7 +17,6 @@ class FakeAuthService extends AuthService {
   User? get currentUser => null;
 }
 
-// Evita tocar o canal de plataforma do local_auth durante os testes de widget.
 class FakeBiometricService extends BiometricService {
   @override
   Future<bool> canUseBiometric() async => false;

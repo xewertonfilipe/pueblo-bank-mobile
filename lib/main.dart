@@ -16,7 +16,6 @@ import 'screens/transactions_screen.dart';
 import 'widgets/auth_lifecycle_guard.dart';
 import 'widgets/app_navigation.dart';
 
-// Usado pelo Dashboard para saber quando volta a ficar visível na pilha de rotas.
 final routeObserver = RouteObserver<PageRoute<dynamic>>();
 final navigatorKey = GlobalKey<NavigatorState>();
 

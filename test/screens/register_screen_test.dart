@@ -7,7 +7,6 @@ import 'package:pueblo_bank/screens/register_screen.dart';
 import 'package:pueblo_bank/services/auth_service.dart';
 import 'package:pueblo_bank/utils/auth_validators.dart';
 
-// Evita tocar FirebaseAuth.instance durante os testes de widget.
 class FakeAuthService extends AuthService {
   @override
   Stream<User?> get authStateChanges => const Stream.empty();

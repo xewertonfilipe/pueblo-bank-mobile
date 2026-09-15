@@ -45,7 +45,6 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> _loadPersistedFlags() async {
     _biometricEnabled = await _service.getBiometricEnabled();
-    // Todo início "a frio" do app (fechado por completo) deve exigir biometria novamente.
     _locked = _biometricEnabled;
   }
 
@@ -83,7 +82,6 @@ class AuthProvider extends ChangeNotifier {
     await signOut();
   }
 
-  // Soft-lock: mantém a sessão do Firebase viva, só exige biometria para voltar.
   Future<void> lock() async {
     if (!_biometricEnabled || _locked) return;
     _locked = true;
