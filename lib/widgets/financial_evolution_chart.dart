@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../app_typography.dart';
 import '../providers/transaction_provider.dart';
 import '../utils/brl_currency.dart';
+import 'app_feedback.dart';
 import 'loading_placeholder.dart';
 
 class FinancialEvolutionChart extends StatelessWidget {
@@ -34,10 +35,15 @@ class FinancialEvolutionChart extends StatelessWidget {
       spots.add(FlSpot(index.toDouble(), balance));
     }
     if (spots.isEmpty) {
-      return const Card(
-          child: SizedBox(
-              height: 220,
-              child: Center(child: Text('Ainda não há dados para exibir.'))));
+      return Card(
+        child: SizedBox(
+          height: 220,
+          child: AppFeedbackPanel(
+            icon: Icons.show_chart,
+            title: 'Ainda não há dados para exibir.',
+          ),
+        ),
+      );
     }
     final theme = Theme.of(context);
     final tooltipStyle = AppTypography.financialValue(

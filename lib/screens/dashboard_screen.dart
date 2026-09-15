@@ -10,6 +10,7 @@ import '../providers/transaction_provider.dart';
 import '../routes.dart';
 import '../utils/brl_currency.dart';
 import '../widgets/category_distribution_chart.dart';
+import '../widgets/app_feedback.dart';
 import '../widgets/financial_evolution_chart.dart';
 import '../widgets/financial_summary.dart';
 import '../widgets/loading_placeholder.dart';
@@ -218,6 +219,17 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                     arguments: item,
                   ),
                 ),
+            ] else ...[
+              const SizedBox(height: 28),
+              Text('Recentes', style: theme.textTheme.titleMedium),
+              AppFeedbackPanel(
+                icon: Icons.receipt_long_outlined,
+                title: 'Ainda não há transações para exibir.',
+                actionLabel: 'Nova transação',
+                actionIcon: Icons.add,
+                onAction: () =>
+                    Navigator.pushNamed(context, Routes.transactionForm),
+              ),
             ],
           ],
         ),

@@ -58,6 +58,20 @@ class _FakeTransactionService extends TransactionService {
   }
 }
 
+class _EmptyTransactionService extends TransactionService {
+  @override
+  Future<TransactionPage> fetchPage({
+    required String userId,
+    DateTime? startDate,
+    DateTime? endDate,
+    TransactionCategory? category,
+    dynamic cursor,
+    int limit = 10,
+  }) async {
+    return const TransactionPage(items: [], cursor: null);
+  }
+}
+
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
@@ -105,5 +119,45 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Editar transação'), findsOneWidget);
+  });
+
+  testWidgets('exibe estado vazio com ação para nova transação',
+      (tester) async {
+    final transactionProvider =
+        TransactionProvider(service: _EmptyTransactionService());
+    transactionProvider.setUser('user-1');
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(
+            create: (_) => AuthProvider(
+              service: _FakeAuthService(),
+              biometricService: _FakeBiometricService(),
+            ),
+          ),
+          ChangeNotifierProvider.value(value: transactionProvider),
+        ],
+        child: MaterialApp(
+          home: const DashboardScreen(),
+          routes: {
+            Routes.transactionForm: (_) => const TransactionFormScreen(),
+          },
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(transactionProvider.summaryLoading, isFalse);
+
+    await tester.drag(find.byType(ListView), const Offset(0, -1000));
+    await tester.pump();
+
+    expect(find.text('Ainda não há transações para exibir.'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Nova transação'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nova transação'), findsOneWidget);
   });
 }

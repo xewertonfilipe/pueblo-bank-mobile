@@ -7,6 +7,7 @@ import '../models/transaction_model.dart';
 import '../providers/transaction_provider.dart';
 import '../routes.dart';
 import '../utils/brl_currency.dart';
+import '../widgets/app_feedback.dart';
 
 class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
@@ -64,10 +65,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         provider.loadNextPage();
       } else if (!provider.hasMore) {
         _loadTriggeredThisGesture = true;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Não há mais transações para carregar.')),
-        );
+        AppFeedback.showInfo(context, 'Não há mais transações para carregar.');
       }
     }
   }
@@ -182,20 +180,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   Widget _buildLoadingIndicator(TransactionProvider provider) {
     if (provider.loadingMore) {
-      if (provider.error != null && provider.error!.contains('mais')) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(provider.error!),
-              duration: const Duration(seconds: 3),
-              action: SnackBarAction(
-                label: 'Tentar novamente',
-                onPressed: () => provider.loadNextPage(),
-              ),
-            ),
-          );
-        });
-      }
       return const Padding(
         padding: EdgeInsets.all(16),
         child: Center(
@@ -208,6 +192,14 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             ],
           ),
         ),
+      );
+    } else if (provider.error != null && provider.items.isNotEmpty) {
+      return AppFeedbackPanel(
+        icon: Icons.cloud_off,
+        color: AppColors.error,
+        title: provider.error!,
+        actionLabel: 'Tentar novamente',
+        onAction: provider.loadNextPage,
       );
     } else if (!provider.hasMore && provider.items.isNotEmpty) {
       return Padding(
@@ -240,42 +232,33 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     }
     if (provider.error != null && provider.items.isEmpty) {
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.cloud_off, size: 40),
-              const SizedBox(height: 12),
-              Text(provider.error!, textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: provider.loadFirstPage,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Tentar novamente'),
-              ),
-            ],
-          ),
+        child: AppFeedbackPanel(
+          icon: Icons.cloud_off,
+          color: AppColors.error,
+          title: provider.error!,
+          actionLabel: 'Tentar novamente',
+          onAction: provider.loadFirstPage,
         ),
       );
     }
     if (provider.items.isEmpty) {
-      return ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          const SizedBox(height: 180),
-          const Center(child: Text('Nenhuma transação encontrada.')),
-          if (provider.hasActiveFilters) ...[
-            const SizedBox(height: 16),
-            Center(
-              child: OutlinedButton.icon(
-                onPressed: _clearFilters,
-                icon: const Icon(Icons.clear),
-                label: const Text('Limpar filtros'),
-              ),
+      return RefreshIndicator(
+        onRefresh: provider.loadFirstPage,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            const SizedBox(height: 120),
+            AppFeedbackPanel(
+              icon: Icons.receipt_long_outlined,
+              title: provider.hasActiveFilters
+                  ? 'Nenhuma transação encontrada para estes filtros.'
+                  : 'Ainda não há transações para exibir.',
+              actionLabel: provider.hasActiveFilters ? 'Limpar filtros' : null,
+              onAction: provider.hasActiveFilters ? _clearFilters : null,
+              actionIcon: Icons.clear,
             ),
           ],
-        ],
+        ),
       );
     }
     return RefreshIndicator(

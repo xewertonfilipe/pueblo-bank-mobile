@@ -1,16 +1,15 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:another_flushbar/flushbar.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../models/transaction_model.dart';
-import '../app_colors.dart';
 import '../providers/auth_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../services/storage_service.dart';
 import '../utils/brl_currency.dart';
+import '../widgets/app_feedback.dart';
 
 class TransactionFormScreen extends StatefulWidget {
   const TransactionFormScreen({super.key});
@@ -112,32 +111,16 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                 ? 'Depositado com sucesso!'
                 : 'Saque realizado com sucesso!')
             : 'Transação editada com sucesso!';
-        Flushbar(
-          message: message,
-          icon: const Icon(Icons.check_circle, color: Colors.white),
-          backgroundColor: AppColors.success,
-          duration: const Duration(seconds: 2),
-          flushbarPosition: FlushbarPosition.TOP,
-          margin: const EdgeInsets.all(8),
-          borderRadius: BorderRadius.circular(8),
-        ).show(context);
+        AppFeedback.showSuccess(context, message);
         Future.delayed(const Duration(milliseconds: 2500), () {
           if (mounted) Navigator.pop(context);
         });
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            backgroundColor: AppColors.error,
-            content: Row(
-              children: [
-                Icon(Icons.error_outline, color: Colors.white),
-                SizedBox(width: 8),
-                Expanded(child: Text('Não foi possível salvar a transação.')),
-              ],
-            ),
-          ),
+        AppFeedback.showError(
+          context,
+          'Não foi possível salvar a transação.',
         );
       }
     } finally {

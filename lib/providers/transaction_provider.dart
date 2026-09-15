@@ -136,6 +136,7 @@ class TransactionProvider extends ChangeNotifier {
   Future<void> loadNextPage() async {
     if (_userId == null || !_hasMore || _loading || _loadingMore) return;
     _loadingMore = true;
+    _error = null;
     notifyListeners();
     try {
       final page = await _service.fetchPage(

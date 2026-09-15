@@ -120,7 +120,10 @@ void main() {
     await tester.tap(find.text('Depósitos'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Nenhuma transação encontrada.'), findsOneWidget);
+    expect(
+      find.text('Nenhuma transação encontrada para estes filtros.'),
+      findsOneWidget,
+    );
     expect(find.text('Limpar filtros'), findsNWidgets(2));
   });
 }

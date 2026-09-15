@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../app_colors.dart';
 import '../providers/transaction_provider.dart';
+import 'app_feedback.dart';
 import 'loading_placeholder.dart';
 
 class CategoryDistributionChart extends StatelessWidget {
@@ -25,10 +26,13 @@ class CategoryDistributionChart extends StatelessWidget {
     }
     final total = provider.summaryDeposits + provider.summaryWithdrawals;
     if (total == 0) {
-      return const Card(
+      return Card(
         child: SizedBox(
           height: 180,
-          child: Center(child: Text('Ainda não há dados para exibir.')),
+          child: AppFeedbackPanel(
+            icon: Icons.pie_chart_outline,
+            title: 'Ainda não há dados para exibir.',
+          ),
         ),
       );
     }

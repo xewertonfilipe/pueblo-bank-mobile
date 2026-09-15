@@ -8,6 +8,38 @@ class MockTransactionService extends Mock implements TransactionService {}
 
 class FakeTransactionModel extends Fake implements TransactionModel {}
 
+class _PaginationTransactionService extends TransactionService {
+  var _pageCalls = 0;
+
+  @override
+  Future<TransactionPage> fetchPage({
+    required String userId,
+    DateTime? startDate,
+    DateTime? endDate,
+    TransactionCategory? category,
+    dynamic cursor,
+    int limit = 10,
+  }) async {
+    if (limit == 1000) return const TransactionPage(items: [], cursor: null);
+    if (_pageCalls++ == 0) {
+      return TransactionPage(
+        items: List.generate(
+          10,
+          (index) => TransactionModel(
+            id: 'transaction-$index',
+            amount: 10,
+            category: TransactionCategory.deposit,
+            date: DateTime(2026, 1, 1),
+          ),
+        ),
+        cursor: null,
+      );
+    }
+    if (_pageCalls == 2) throw StateError('pagination failed');
+    return const TransactionPage(items: [], cursor: null);
+  }
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(FakeTransactionModel());
@@ -114,5 +146,27 @@ void main() {
 
     expect(provider.hasActiveFilters, isFalse);
     expect(provider.filterSummary, 'Todas as transações');
+  });
+
+  test('preserva itens ao falhar na paginação e limpa erro no retry', () async {
+    final paginationProvider =
+        TransactionProvider(service: _PaginationTransactionService());
+
+    paginationProvider.setUser('user-1');
+    await Future<void>.delayed(Duration.zero);
+
+    expect(paginationProvider.items, hasLength(10));
+
+    await paginationProvider.loadNextPage();
+
+    expect(paginationProvider.items, hasLength(10));
+    expect(
+        paginationProvider.error, 'Não foi possível carregar mais transações.');
+
+    await paginationProvider.loadNextPage();
+
+    expect(paginationProvider.items, hasLength(10));
+    expect(paginationProvider.error, isNull);
+    expect(paginationProvider.hasMore, isFalse);
   });
 }
