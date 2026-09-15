@@ -177,7 +177,7 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
         onRefresh: provider.loadFirstPage,
         child: ListView(
           controller: _scrollController,
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
           children: [
             Text(
               'Olá, ${auth.user?.email?.split('@').first ?? 'pessoa'}',

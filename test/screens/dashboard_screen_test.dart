@@ -110,11 +110,19 @@ void main() {
 
     final deposit = tester.widget<Text>(find.text('R\$ 1.234,56'));
     final withdrawal = tester.widget<Text>(find.text('R\$ 234,56'));
+    final scrollToTop = find.byTooltip('Voltar ao topo');
 
     expect(deposit.style?.color, AppColors.income);
     expect(withdrawal.style?.color, AppColors.expense);
     expect(find.text('Entrada'), findsOneWidget);
     expect(find.text('Saída'), findsOneWidget);
+    expect(scrollToTop, findsOneWidget);
+    expect(
+      tester.getRect(find.text('R\$ 234,56')).overlaps(
+            tester.getRect(scrollToTop),
+          ),
+      isFalse,
+    );
 
     await tester.tap(find.text('Entrada'));
     await tester.pumpAndSettle();
