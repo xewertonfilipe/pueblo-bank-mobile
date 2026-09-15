@@ -152,6 +152,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   Widget _buildFilterBar(TransactionProvider provider) {
     final theme = Theme.of(context);
+    final filtersEnabled = !provider.loading;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Column(
@@ -164,20 +165,23 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 FilterChip(
                   label: const Text('Todas'),
                   selected: provider.category == null,
-                  onSelected: (_) => _setCategory(null),
+                  onSelected: filtersEnabled ? (_) => _setCategory(null) : null,
                 ),
                 const SizedBox(width: 8),
                 FilterChip(
                   label: const Text('Depósitos'),
                   selected: provider.category == TransactionCategory.deposit,
-                  onSelected: (_) => _setCategory(TransactionCategory.deposit),
+                  onSelected: filtersEnabled
+                      ? (_) => _setCategory(TransactionCategory.deposit)
+                      : null,
                 ),
                 const SizedBox(width: 8),
                 FilterChip(
                   label: const Text('Saques'),
                   selected: provider.category == TransactionCategory.withdrawal,
-                  onSelected: (_) =>
-                      _setCategory(TransactionCategory.withdrawal),
+                  onSelected: filtersEnabled
+                      ? (_) => _setCategory(TransactionCategory.withdrawal)
+                      : null,
                 ),
                 const SizedBox(width: 8),
                 FilterChip(
@@ -185,12 +189,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   label: Text(_dateRangeLabel(provider)),
                   selected:
                       provider.startDate != null && provider.endDate != null,
-                  onSelected: (_) => _pickDateRange(),
+                  onSelected: filtersEnabled ? (_) => _pickDateRange() : null,
                 ),
-                if (provider.hasActiveFilters) ...[
+                if (provider.hasActiveFilters || provider.loading) ...[
                   const SizedBox(width: 8),
                   TextButton.icon(
-                    onPressed: _clearFilters,
+                    onPressed: filtersEnabled ? _clearFilters : null,
                     icon: const Icon(Icons.clear),
                     label: const Text('Limpar filtros'),
                   ),
@@ -205,6 +209,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
+          if (provider.loading)
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: LinearProgressIndicator(),
+            ),
         ],
       ),
     );
@@ -428,7 +437,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         title: const Text('Transações'),
         actions: [
           IconButton(
-            onPressed: provider.loadFirstPage,
+            onPressed: provider.loading ? null : provider.loadFirstPage,
             icon: const Icon(Icons.refresh),
             tooltip: 'Atualizar transações',
           ),

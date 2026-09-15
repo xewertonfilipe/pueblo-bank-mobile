@@ -107,7 +107,7 @@ class TransactionProvider extends ChangeNotifier {
   }
 
   Future<void> loadFirstPage() async {
-    if (_userId == null) return;
+    if (_userId == null || _loading) return;
     _loading = true;
     _error = null;
     _cursor = null;

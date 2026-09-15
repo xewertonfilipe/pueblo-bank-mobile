@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pueblo_bank/models/transaction_model.dart';
@@ -37,6 +39,39 @@ class _PaginationTransactionService extends TransactionService {
     }
     if (_pageCalls == 2) throw StateError('pagination failed');
     return const TransactionPage(items: [], cursor: null);
+  }
+}
+
+class _FilterLoadingService extends TransactionService {
+  var calls = 0;
+  TransactionCategory? requestedCategory;
+  final pendingPage = Completer<TransactionPage>();
+
+  @override
+  Future<TransactionPage> fetchPage({
+    required String userId,
+    DateTime? startDate,
+    DateTime? endDate,
+    TransactionCategory? category,
+    dynamic cursor,
+    int limit = 10,
+  }) async {
+    requestedCategory = category;
+    calls++;
+    if (calls == 1) {
+      return TransactionPage(
+        items: [
+          TransactionModel(
+            id: 'initial-1',
+            amount: 100,
+            category: TransactionCategory.deposit,
+            date: DateTime(2026, 9, 14),
+          ),
+        ],
+        cursor: null,
+      );
+    }
+    return pendingPage.future;
   }
 }
 
@@ -146,6 +181,28 @@ void main() {
 
     expect(provider.hasActiveFilters, isFalse);
     expect(provider.filterSummary, 'Todas as transações');
+  });
+
+  test('mantém itens e loading durante a troca de filtro', () async {
+    final filterService = _FilterLoadingService();
+    final filterProvider = TransactionProvider(service: filterService);
+
+    filterProvider.setUser('user-1');
+    await Future<void>.delayed(Duration.zero);
+    expect(filterProvider.items, hasLength(1));
+
+    filterProvider.setFilters(category: TransactionCategory.withdrawal);
+
+    expect(filterProvider.loading, isTrue);
+    expect(filterProvider.items, hasLength(1));
+    expect(filterService.requestedCategory, TransactionCategory.withdrawal);
+
+    filterService.pendingPage
+        .complete(const TransactionPage(items: [], cursor: null));
+    await Future<void>.delayed(Duration.zero);
+
+    expect(filterProvider.loading, isFalse);
+    expect(filterProvider.items, isEmpty);
   });
 
   test('preserva itens ao falhar na paginação e limpa erro no retry', () async {

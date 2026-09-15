@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -53,6 +55,56 @@ class _EmptyTransactionService extends TransactionService {
     int limit = 10,
   }) async {
     return const TransactionPage(items: [], cursor: null);
+  }
+}
+
+class _PendingFilterTransactionService extends TransactionService {
+  var calls = 0;
+  Completer<TransactionPage>? pendingPage;
+
+  @override
+  Future<TransactionPage> fetchPage({
+    required String userId,
+    DateTime? startDate,
+    DateTime? endDate,
+    TransactionCategory? category,
+    dynamic cursor,
+    int limit = 10,
+  }) async {
+    calls++;
+    if (calls == 1) {
+      return TransactionPage(
+        items: [
+          TransactionModel(
+            id: 'initial-1',
+            amount: 100,
+            category: TransactionCategory.deposit,
+            date: DateTime(2026, 9, 14),
+            description: 'Item anterior',
+          ),
+        ],
+        cursor: null,
+      );
+    }
+    pendingPage = Completer<TransactionPage>();
+    return pendingPage!.future;
+  }
+
+  void completePending() {
+    pendingPage!.complete(
+      TransactionPage(
+        items: [
+          TransactionModel(
+            id: 'filtered-$calls',
+            amount: 100,
+            category: TransactionCategory.deposit,
+            date: DateTime(2026, 9, 14),
+            description: 'Item filtrado',
+          ),
+        ],
+        cursor: null,
+      ),
+    );
   }
 }
 
@@ -150,6 +202,53 @@ void main() {
 
     expect(provider.category, isNull);
     expect(find.text('Filtros: Todas as transações'), findsOneWidget);
+  });
+
+  testWidgets('exibe loading e bloqueia filtros durante a busca',
+      (tester) async {
+    final service = _PendingFilterTransactionService();
+    final provider = TransactionProvider(service: service);
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const MaterialApp(home: TransactionsScreen()),
+      ),
+    );
+    provider.setUser('user-1');
+    await tester.pumpAndSettle();
+
+    Future<void> applyFilter(String label) async {
+      await tester.tap(find.widgetWithText(FilterChip, label));
+      await tester.pump();
+
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(find.textContaining('Item'), findsOneWidget);
+      expect(
+        tester
+            .widget<FilterChip>(find.widgetWithText(FilterChip, 'Saques'))
+            .onSelected,
+        isNull,
+      );
+
+      service.completePending();
+      await tester.pumpAndSettle();
+      expect(find.byType(LinearProgressIndicator), findsNothing);
+    }
+
+    await applyFilter('Depósitos');
+    await applyFilter('Saques');
+    await applyFilter('Todas');
+    await applyFilter('Depósitos');
+
+    await tester.tap(find.widgetWithText(TextButton, 'Limpar filtros'));
+    await tester.pump();
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    expect(find.text('Limpar filtros'), findsOneWidget);
+
+    service.completePending();
+    await tester.pumpAndSettle();
+    expect(find.byType(LinearProgressIndicator), findsNothing);
   });
 
   testWidgets('oferece limpar filtros quando não há resultados',
