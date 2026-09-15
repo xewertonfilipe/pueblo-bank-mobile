@@ -88,8 +88,25 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     setState(() => _receipt = null);
   }
 
+  bool get _hasChanges {
+    final existing = _existing;
+    if (existing == null) return true;
+
+    final amount = parseBrlCurrency(_amount.text);
+    final dateChanged = _date.year != existing.date.year ||
+        _date.month != existing.date.month ||
+        _date.day != existing.date.day;
+
+    return amount != existing.amount ||
+        _category != existing.category ||
+        _description.text.trim() != existing.description.trim() ||
+        dateChanged ||
+        _receipt != null;
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_existing != null && !_hasChanges) return;
     final userId = context.read<AuthProvider>().user?.uid;
     if (userId == null) return;
     setState(() => _saving = true);
@@ -204,6 +221,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             TextFormField(
               controller: _amount,
               focusNode: _amountFocusNode,
+              onChanged: (_) => setState(() {}),
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
               inputFormatters: const [BrlCurrencyInputFormatter()],
@@ -244,6 +262,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _description,
+              onChanged: (_) => setState(() {}),
               decoration: const InputDecoration(labelText: 'Descrição'),
             ),
             const SizedBox(height: 16),
@@ -330,7 +349,9 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             ],
             const SizedBox(height: 24),
             FilledButton(
-              onPressed: _saving ? null : _save,
+              onPressed: _saving || (_existing != null && !_hasChanges)
+                  ? null
+                  : _save,
               child: _saving
                   ? const SizedBox(
                       height: 20,
