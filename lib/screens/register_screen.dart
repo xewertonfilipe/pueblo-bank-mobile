@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 import '../routes.dart';
+import '../utils/auth_validators.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -21,7 +23,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void initState() {
     super.initState();
     // Evita mostrar um erro deixado por uma tentativa anterior em outra tela.
-    WidgetsBinding.instance.addPostFrameCallback((_) => context.read<AuthProvider>().clearError());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => context.read<AuthProvider>().clearError());
   }
 
   @override
@@ -34,8 +37,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    final success = await context.read<AuthProvider>().register(_email.text, _password.text);
-    if (success && mounted) Navigator.pushReplacementNamed(context, Routes.dashboard);
+    final success = await context
+        .read<AuthProvider>()
+        .register(_email.text, _password.text);
+    if (success && mounted) {
+      Navigator.pushReplacementNamed(context, Routes.dashboard);
+    }
   }
 
   @override
@@ -46,15 +53,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
       body: Form(
         key: _formKey,
         child: ListView(padding: const EdgeInsets.all(24), children: [
-          TextFormField(controller: _email, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'E-mail'), validator: (value) => value == null || !value.contains('@') ? 'Informe um e-mail valido.' : null),
+          TextFormField(
+            controller: _email,
+            keyboardType: TextInputType.emailAddress,
+            inputFormatters: [
+              LengthLimitingTextInputFormatter(emailMaxLength),
+            ],
+            decoration: const InputDecoration(labelText: 'E-mail'),
+            validator: validateEmail,
+          ),
           const SizedBox(height: 16),
-          TextFormField(controller: _password, obscureText: true, decoration: const InputDecoration(labelText: 'Senha'), validator: (value) => value == null || value.length < 6 ? 'Use pelo menos seis caracteres.' : null),
+          TextFormField(
+            controller: _password,
+            obscureText: true,
+            decoration: const InputDecoration(labelText: 'Senha'),
+            validator: validatePassword,
+          ),
           const SizedBox(height: 16),
-          TextFormField(controller: _confirmation, obscureText: true, decoration: const InputDecoration(labelText: 'Confirmar senha'), validator: (value) => value != _password.text ? 'As senhas precisam ser iguais.' : null),
+          TextFormField(
+            controller: _confirmation,
+            obscureText: true,
+            decoration: const InputDecoration(labelText: 'Confirmar senha'),
+            validator: (value) =>
+                validatePasswordConfirmation(value, _password.text),
+          ),
           const SizedBox(height: 24),
-          if (auth.error != null) Text(auth.error!, style: const TextStyle(color: Colors.red)),
+          if (auth.error != null)
+            Text(auth.error!, style: const TextStyle(color: Colors.red)),
           const SizedBox(height: 12),
-          FilledButton(onPressed: auth.loading ? null : _submit, child: auth.loading ? const CircularProgressIndicator() : const Text('Cadastrar')),
+          FilledButton(
+              onPressed: auth.loading ? null : _submit,
+              child: auth.loading
+                  ? const CircularProgressIndicator()
+                  : const Text('Cadastrar')),
         ]),
       ),
     );

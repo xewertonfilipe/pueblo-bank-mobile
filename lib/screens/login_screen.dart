@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 import '../routes.dart';
+import '../utils/auth_validators.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -55,7 +57,9 @@ class _LoginScreenState extends State<LoginScreen> {
     if (success && !auth.biometricEnabled && _biometricAvailable) {
       await _askToEnableBiometric();
     }
-    if (success && mounted) Navigator.pushReplacementNamed(context, Routes.dashboard);
+    if (success && mounted) {
+      Navigator.pushReplacementNamed(context, Routes.dashboard);
+    }
   }
 
   Future<void> _askToEnableBiometric() async {
@@ -63,10 +67,15 @@ class _LoginScreenState extends State<LoginScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Login com biometria'),
-        content: const Text('Deseja ativar o login com biometria para os próximos acessos?'),
+        content: const Text(
+            'Deseja ativar o login com biometria para os próximos acessos?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Não')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Sim')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Não')),
+          FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Sim')),
         ],
       ),
     );
@@ -96,7 +105,8 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_unlocking) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    final showBiometricUnlock = auth.hasUnlockableSession && _biometricAvailable && !_showPasswordForm;
+    final showBiometricUnlock =
+        auth.hasUnlockableSession && _biometricAvailable && !_showPasswordForm;
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -104,34 +114,75 @@ class _LoginScreenState extends State<LoginScreen> {
             padding: const EdgeInsets.all(24),
             child: Form(
               key: _formKey,
-              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                const Icon(Icons.account_balance, size: 64, color: Color(0xFF075985)),
-                const SizedBox(height: 20),
-                Text('Pueblo Bank', style: Theme.of(context).textTheme.headlineMedium, textAlign: TextAlign.center),
-                const SizedBox(height: 8),
-                const Text('Suas financas, em um so lugar.', textAlign: TextAlign.center),
-                const SizedBox(height: 40),
-                if (showBiometricUnlock) ...[
-                  OutlinedButton.icon(
-                    onPressed: _unlockWithBiometric,
-                    icon: const Icon(Icons.fingerprint),
-                    label: const Text('Entrar com biometria'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextButton(
-                    onPressed: () => setState(() => _showPasswordForm = true),
-                    child: const Text('Usar e-mail e senha'),
-                  ),
-                ] else ...[
-                  TextFormField(controller: _email, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'E-mail', prefixIcon: Icon(Icons.email_outlined)), validator: (value) => value == null || !value.contains('@') ? 'Informe um e-mail valido.' : null),
-                  const SizedBox(height: 16),
-                  TextFormField(controller: _password, obscureText: true, decoration: const InputDecoration(labelText: 'Senha', prefixIcon: Icon(Icons.lock_outline)), validator: (value) => value == null || value.length < 6 ? 'Use pelo menos seis caracteres.' : null),
-                  const SizedBox(height: 24),
-                  if (auth.error != null) ...[Text(auth.error!, style: const TextStyle(color: Colors.red)), const SizedBox(height: 12)],
-                  FilledButton(onPressed: auth.loading ? null : _submit, child: auth.loading ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Entrar')),
-                  TextButton(onPressed: () => Navigator.pushNamed(context, Routes.register), child: const Text('Criar uma conta')),
-                ],
-              ]),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Icon(Icons.account_balance,
+                        size: 64, color: Color(0xFF075985)),
+                    const SizedBox(height: 20),
+                    Text('Pueblo Bank',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                        textAlign: TextAlign.center),
+                    const SizedBox(height: 8),
+                    const Text('Suas financas, em um so lugar.',
+                        textAlign: TextAlign.center),
+                    const SizedBox(height: 40),
+                    if (showBiometricUnlock) ...[
+                      OutlinedButton.icon(
+                        onPressed: _unlockWithBiometric,
+                        icon: const Icon(Icons.fingerprint),
+                        label: const Text('Entrar com biometria'),
+                      ),
+                      const SizedBox(height: 12),
+                      TextButton(
+                        onPressed: () =>
+                            setState(() => _showPasswordForm = true),
+                        child: const Text('Usar e-mail e senha'),
+                      ),
+                    ] else ...[
+                      TextFormField(
+                        controller: _email,
+                        keyboardType: TextInputType.emailAddress,
+                        inputFormatters: [
+                          LengthLimitingTextInputFormatter(emailMaxLength),
+                        ],
+                        decoration: const InputDecoration(
+                          labelText: 'E-mail',
+                          prefixIcon: Icon(Icons.email_outlined),
+                        ),
+                        validator: validateEmail,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _password,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Senha',
+                          prefixIcon: Icon(Icons.lock_outline),
+                        ),
+                        validator: validatePassword,
+                      ),
+                      const SizedBox(height: 24),
+                      if (auth.error != null) ...[
+                        Text(auth.error!,
+                            style: const TextStyle(color: Colors.red)),
+                        const SizedBox(height: 12)
+                      ],
+                      FilledButton(
+                          onPressed: auth.loading ? null : _submit,
+                          child: auth.loading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2))
+                              : const Text('Entrar')),
+                      TextButton(
+                          onPressed: () =>
+                              Navigator.pushNamed(context, Routes.register),
+                          child: const Text('Criar uma conta')),
+                    ],
+                  ]),
             ),
           ),
         ),
