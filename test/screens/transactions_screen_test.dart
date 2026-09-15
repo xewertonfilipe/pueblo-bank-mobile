@@ -8,6 +8,9 @@ import 'package:pueblo_bank/services/transaction_service.dart';
 
 class _FakeTransactionService extends TransactionService {
   @override
+  Future<void> delete(String userId, String transactionId) async {}
+
+  @override
   Future<TransactionPage> fetchPage({
     required String userId,
     DateTime? startDate,
@@ -125,5 +128,36 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Limpar filtros'), findsNWidgets(2));
+  });
+
+  testWidgets('confirma exclusão antes de remover uma transação',
+      (tester) async {
+    final provider = TransactionProvider(service: _FakeTransactionService());
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const MaterialApp(home: TransactionsScreen()),
+      ),
+    );
+    provider.setUser('user-1');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Ações').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Excluir'), findsOneWidget);
+
+    await tester.tap(find.text('Excluir'));
+    await tester.pump();
+    expect(find.text('Excluir transação?'), findsOneWidget);
+    expect(find.text('Essa ação remove o registro financeiro permanentemente.'),
+        findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Excluir'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(provider.items, hasLength(1));
+    expect(find.text('Transação excluída.'), findsOneWidget);
   });
 }

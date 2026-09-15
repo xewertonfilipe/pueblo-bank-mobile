@@ -108,6 +108,38 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     context.read<TransactionProvider>().setFilters();
   }
 
+  Future<void> _confirmDelete(TransactionModel item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Excluir transação?'),
+        content: const Text(
+          'Essa ação remove o registro financeiro permanentemente.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await context.read<TransactionProvider>().remove(item.id);
+      if (mounted) AppFeedback.showSuccess(context, 'Transação excluída.');
+    } catch (_) {
+      if (mounted) {
+        AppFeedback.showError(context, 'Não foi possível excluir a transação.');
+      }
+    }
+  }
+
   String _dateRangeLabel(TransactionProvider provider) {
     if (provider.startDate == null || provider.endDate == null) {
       return 'Período';
@@ -295,12 +327,42 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 '${item.date.day.toString().padLeft(2, '0')}/${item.date.month.toString().padLeft(2, '0')}/${item.date.year}',
                 style: theme.textTheme.bodySmall,
               ),
-              trailing: Text(
-                'R\$ ${formatBrlCurrency(item.amount)}',
-                style: AppTypography.financialCompact(
-                  theme.textTheme,
-                  color: item.isDeposit ? AppColors.income : AppColors.expense,
-                ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'R\$ ${formatBrlCurrency(item.amount)}',
+                    style: AppTypography.financialCompact(
+                      theme.textTheme,
+                      color:
+                          item.isDeposit ? AppColors.income : AppColors.expense,
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    tooltip: 'Ações',
+                    onSelected: (action) {
+                      if (action == 'edit') {
+                        Navigator.pushNamed(
+                          context,
+                          Routes.transactionForm,
+                          arguments: item,
+                        );
+                      } else {
+                        _confirmDelete(item);
+                      }
+                    },
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(
+                        value: 'edit',
+                        child: Text('Editar'),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Text('Excluir'),
+                      ),
+                    ],
+                  ),
+                ],
               ),
               onTap: () => Navigator.pushNamed(
                 context,

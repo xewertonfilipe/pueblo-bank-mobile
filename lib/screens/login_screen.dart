@@ -22,6 +22,8 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _initialized = false;
   bool _showPasswordForm = false;
   bool _unlocking = false;
+  bool _returnAfterUnlock = false;
+  bool _routeArgumentsRead = false;
 
   @override
   void initState() {
@@ -44,6 +46,14 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_routeArgumentsRead) return;
+    _routeArgumentsRead = true;
+    _returnAfterUnlock = ModalRoute.of(context)?.settings.arguments == true;
+  }
+
+  @override
   void dispose() {
     _email.dispose();
     _password.dispose();
@@ -59,7 +69,11 @@ class _LoginScreenState extends State<LoginScreen> {
       await _askToEnableBiometric();
     }
     if (success && mounted) {
-      Navigator.pushReplacementNamed(context, Routes.dashboard);
+      if (_returnAfterUnlock) {
+        Navigator.pop(context);
+      } else {
+        Navigator.pushReplacementNamed(context, Routes.dashboard);
+      }
     }
   }
 
@@ -91,7 +105,11 @@ class _LoginScreenState extends State<LoginScreen> {
     final success = await auth.unlockWithBiometric();
     if (!mounted) return;
     if (success) {
-      Navigator.pushReplacementNamed(context, Routes.dashboard);
+      if (_returnAfterUnlock) {
+        Navigator.pop(context);
+      } else {
+        Navigator.pushReplacementNamed(context, Routes.dashboard);
+      }
       return;
     }
     setState(() => _unlocking = false);
@@ -108,22 +126,29 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     final showBiometricUnlock =
         auth.hasUnlockableSession && _biometricAvailable && !_showPasswordForm;
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
+    return PopScope(
+      canPop: !_returnAfterUnlock,
+      child: Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: _formKey,
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Icon(Icons.account_balance,
-                        size: 64, color: Color(0xFF075985)),
+                    const Icon(
+                      Icons.account_balance,
+                      size: 64,
+                      color: Color(0xFF075985),
+                    ),
                     const SizedBox(height: 20),
-                    Text('Pueblo Bank',
-                        style: Theme.of(context).textTheme.headlineMedium,
-                        textAlign: TextAlign.center),
+                    Text(
+                      'Pueblo Bank',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       'Suas financas, em um so lugar.',
@@ -178,23 +203,29 @@ class _LoginScreenState extends State<LoginScreen> {
                               .bodyMedium
                               ?.copyWith(color: AppColors.error),
                         ),
-                        const SizedBox(height: 12)
+                        const SizedBox(height: 12),
                       ],
                       FilledButton(
-                          onPressed: auth.loading ? null : _submit,
-                          child: auth.loading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2))
-                              : const Text('Entrar')),
+                        onPressed: auth.loading ? null : _submit,
+                        child: auth.loading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text('Entrar'),
+                      ),
                       TextButton(
-                          onPressed: () =>
-                              Navigator.pushNamed(context, Routes.register),
-                          child: const Text('Criar uma conta')),
+                        onPressed: () =>
+                            Navigator.pushNamed(context, Routes.register),
+                        child: const Text('Criar uma conta'),
+                      ),
                     ],
-                  ]),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:pueblo_bank/providers/auth_provider.dart';
 import 'package:pueblo_bank/services/auth_service.dart';
 import 'package:pueblo_bank/services/biometric_service.dart';
+import 'package:pueblo_bank/screens/login_screen.dart';
 import 'package:pueblo_bank/widgets/auth_lifecycle_guard.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -21,6 +22,9 @@ class _FakeAuthService extends AuthService {
 class _FakeBiometricService extends BiometricService {
   @override
   Future<bool> canUseBiometric() async => true;
+
+  @override
+  Future<bool> authenticate(String reason) async => true;
 }
 
 void main() {
@@ -46,7 +50,7 @@ void main() {
             navigatorKey: navigatorKey,
             home: const Scaffold(body: Text('conteúdo protegido')),
             routes: {
-              '/login': (_) => const Scaffold(body: Text('login')),
+              '/login': (_) => const LoginScreen(),
             },
           ),
         ),
@@ -60,8 +64,14 @@ void main() {
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pumpAndSettle();
 
-    expect(find.text('login'), findsOneWidget);
+    expect(find.text('Pueblo Bank'), findsOneWidget);
     expect(find.text('conteúdo protegido'), findsNothing);
+
+    await tester.tap(find.text('Entrar com biometria'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pueblo Bank'), findsNothing);
+    expect(find.text('conteúdo protegido'), findsOneWidget);
     auth.dispose();
   });
 
@@ -96,6 +106,38 @@ void main() {
     expect(auth.isLocked, isFalse);
     expect(find.text('conteúdo protegido'), findsOneWidget);
     expect(find.text('login'), findsNothing);
+    auth.dispose();
+  });
+
+  testWidgets('oculta o conteúdo enquanto o app está inativo', (tester) async {
+    final auth = AuthProvider(
+      service: _FakeAuthService(),
+      biometricService: _FakeBiometricService(),
+    );
+    final navigatorKey = GlobalKey<NavigatorState>();
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: auth,
+        child: AuthLifecycleGuard(
+          navigatorKey: navigatorKey,
+          child: MaterialApp(
+            navigatorKey: navigatorKey,
+            home: const Scaffold(body: Text('conteúdo protegido')),
+          ),
+        ),
+      ),
+    );
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tester.pump();
+
+    expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+
+    expect(find.text('conteúdo protegido'), findsOneWidget);
     auth.dispose();
   });
 }

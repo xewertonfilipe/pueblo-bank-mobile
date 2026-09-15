@@ -25,6 +25,7 @@ class _AuthLifecycleGuardState extends State<AuthLifecycleGuard>
   late final AuthProvider _auth;
   bool _wasInBackground = false;
   bool _redirectedToLogin = false;
+  bool _contentObscured = false;
 
   @override
   void initState() {
@@ -47,19 +48,28 @@ class _AuthLifecycleGuardState extends State<AuthLifecycleGuard>
     }
   }
 
+  void _setContentObscured(bool obscured) {
+    if (!mounted || _contentObscured == obscured) return;
+    setState(() => _contentObscured = obscured);
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.hidden:
       case AppLifecycleState.paused:
+        _setContentObscured(true);
         _wasInBackground = true;
         unawaited(_auth.lock());
       case AppLifecycleState.resumed:
+        _setContentObscured(false);
         if (_wasInBackground) {
           _wasInBackground = false;
           unawaited(_redirectToLoginIfNeeded());
         }
       case AppLifecycleState.inactive:
+        _setContentObscured(true);
+        break;
       case AppLifecycleState.detached:
         break;
     }
@@ -78,9 +88,27 @@ class _AuthLifecycleGuardState extends State<AuthLifecycleGuard>
     }
 
     _redirectedToLogin = true;
-    navigator.pushNamedAndRemoveUntil(Routes.login, (route) => false);
+    navigator.pushNamed(Routes.login, arguments: true);
   }
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      alignment: Alignment.topLeft,
+      children: [
+        widget.child,
+        if (_contentObscured)
+          const Positioned.fill(
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: ColoredBox(
+                color: Colors.white,
+                child: Center(child: Icon(Icons.lock_outline, size: 48)),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }
