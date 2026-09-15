@@ -20,6 +20,7 @@ class AppColors {
   static const Color background = Colors.white;
   static const Color shadow = Colors.black12;
   static const Color error = Color(0xFFB42318);
+  static const Color success = Color(0xFF15803D);
   static const Color income = Color(0xFF15803D);
   static const Color expense = Color(0xFFB42318);
 }

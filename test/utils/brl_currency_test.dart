@@ -60,5 +60,6 @@ void main() {
 
   test('formatBrlCurrency prepara o valor inicial de edição', () {
     expect(formatBrlCurrency(1234.56), '1.234,56');
+    expect(formatBrlCurrency(-100.5), '-100,50');
   });
 }

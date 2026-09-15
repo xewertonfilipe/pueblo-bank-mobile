@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../models/transaction_model.dart';
+import '../app_colors.dart';
 import '../providers/auth_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../services/storage_service.dart';
@@ -101,11 +102,10 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                 ? 'Depositado com sucesso!'
                 : 'Saque realizado com sucesso!')
             : 'Transação editada com sucesso!';
-        final backgroundColor =
-            isNew ? (isDeposit ? Colors.green : Colors.red) : Colors.blue;
         Flushbar(
           message: message,
-          backgroundColor: backgroundColor,
+          icon: const Icon(Icons.check_circle, color: Colors.white),
+          backgroundColor: AppColors.success,
           duration: const Duration(seconds: 2),
           flushbarPosition: FlushbarPosition.TOP,
           margin: const EdgeInsets.all(8),
@@ -116,9 +116,20 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
         });
       }
     } catch (_) {
-      if (mounted)
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Não foi possível salvar a transação.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: AppColors.error,
+            content: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.white),
+                SizedBox(width: 8),
+                Expanded(child: Text('Não foi possível salvar a transação.')),
+              ],
+            ),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
