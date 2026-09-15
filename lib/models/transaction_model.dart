@@ -27,7 +27,8 @@ class TransactionModel {
 
   bool get isDeposit => category == TransactionCategory.deposit;
 
-  factory TransactionModel.fromDocument(DocumentSnapshot<Map<String, dynamic>> document) {
+  factory TransactionModel.fromDocument(
+      DocumentSnapshot<Map<String, dynamic>> document) {
     final data = document.data() ?? <String, dynamic>{};
     return TransactionModel(
       id: document.id,
@@ -52,7 +53,9 @@ class TransactionModel {
       'description': description,
       'receiptUrl': receiptUrl,
       'receiptPath': receiptPath,
-      'createdAt': createdAt == null ? FieldValue.serverTimestamp() : Timestamp.fromDate(createdAt!),
+      'createdAt': createdAt == null
+          ? FieldValue.serverTimestamp()
+          : Timestamp.fromDate(createdAt!),
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }

@@ -16,7 +16,8 @@ class LoadingPlaceholder extends StatefulWidget {
   State<LoadingPlaceholder> createState() => _LoadingPlaceholderState();
 }
 
-class _LoadingPlaceholderState extends State<LoadingPlaceholder> with SingleTickerProviderStateMixin {
+class _LoadingPlaceholderState extends State<LoadingPlaceholder>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 900),

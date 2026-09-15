@@ -53,5 +53,3 @@ class AuthService {
     await prefs.setBool(_biometricEnabledKey, value);
   }
 }
-
-

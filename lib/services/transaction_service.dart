@@ -10,13 +10,18 @@ class TransactionPage {
 }
 
 class TransactionService {
-  TransactionService({FirebaseFirestore? firestore}) : _customFirestore = firestore;
+  TransactionService({FirebaseFirestore? firestore})
+      : _customFirestore = firestore;
 
   final FirebaseFirestore? _customFirestore;
-  FirebaseFirestore get _firestore => _customFirestore ?? FirebaseFirestore.instance;
+  FirebaseFirestore get _firestore =>
+      _customFirestore ?? FirebaseFirestore.instance;
 
   CollectionReference<Map<String, dynamic>> _collection(String userId) {
-    return _firestore.collection('users').doc(userId).collection('transactions');
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('transactions');
   }
 
   Future<TransactionPage> fetchPage({
@@ -27,11 +32,22 @@ class TransactionService {
     DocumentSnapshot<Map<String, dynamic>>? cursor,
     int limit = 10,
   }) async {
-    Query<Map<String, dynamic>> query = _collection(userId).orderBy('date', descending: true);
-    if (startDate != null) query = query.where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));
-    if (endDate != null) query = query.where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate));
-    if (category != null) query = query.where('category', isEqualTo: category.name);
-    if (cursor != null) query = query.startAfterDocument(cursor);
+    Query<Map<String, dynamic>> query =
+        _collection(userId).orderBy('date', descending: true);
+    if (startDate != null) {
+      query = query.where('date',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));
+    }
+    if (endDate != null) {
+      query =
+          query.where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate));
+    }
+    if (category != null) {
+      query = query.where('category', isEqualTo: category.name);
+    }
+    if (cursor != null) {
+      query = query.startAfterDocument(cursor);
+    }
 
     final snapshot = await query.limit(limit).get();
     return TransactionPage(
@@ -41,13 +57,17 @@ class TransactionService {
   }
 
   Future<String> create(String userId, TransactionModel transaction) async {
-    final reference = transaction.id.isEmpty ? _collection(userId).doc() : _collection(userId).doc(transaction.id);
+    final reference = transaction.id.isEmpty
+        ? _collection(userId).doc()
+        : _collection(userId).doc(transaction.id);
     await reference.set(transaction.toFirestore());
     return reference.id;
   }
 
   Future<void> update(String userId, TransactionModel transaction) {
-    return _collection(userId).doc(transaction.id).update(transaction.toFirestore());
+    return _collection(userId)
+        .doc(transaction.id)
+        .update(transaction.toFirestore());
   }
 
   Future<void> delete(String userId, String transactionId) {

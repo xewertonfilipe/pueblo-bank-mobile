@@ -6,4 +6,3 @@ class Routes {
   static const String transactions = '/transactions';
   static const String transactionForm = '/transaction-form';
 }
-

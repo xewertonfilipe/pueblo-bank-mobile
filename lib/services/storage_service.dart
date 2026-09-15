@@ -23,7 +23,8 @@ class StorageService {
     final name = file.path.split(RegExp(r'[/\\]')).last;
     final reference = _storage.ref('receipts/$userId/$transactionId/$name');
     await reference.putFile(file);
-    return UploadedReceipt(url: await reference.getDownloadURL(), path: reference.fullPath);
+    return UploadedReceipt(
+        url: await reference.getDownloadURL(), path: reference.fullPath);
   }
 
   Future<void> deleteReceipt(String url) => _storage.refFromURL(url).delete();
