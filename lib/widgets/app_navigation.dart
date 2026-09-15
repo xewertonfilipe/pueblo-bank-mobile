@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/transaction_provider.dart';
 import '../routes.dart';
 import '../screens/dashboard_screen.dart';
+import '../screens/transaction_form_screen.dart';
 import '../screens/transactions_screen.dart';
 
 class AppNavigationScreen extends StatefulWidget {
@@ -43,11 +44,15 @@ class _AppNavigationScreenState extends State<AppNavigationScreen> {
   Future<void> _openNewTransaction() async {
     final previousIndex = _contentIndex;
     setState(() => _selectedIndex = 2);
-    final result = await Navigator.pushNamed(context, Routes.transactionForm);
+    final result = await Navigator.pushNamed(
+      context,
+      Routes.transactionForm,
+      arguments: const TransactionFormArguments(
+        source: TransactionFormSource.newTransaction,
+      ),
+    );
     if (!mounted) return;
-    if (result == true) {
-      _showSummaryAfterSave();
-    } else {
+    if (result == true || result == null) {
       setState(() {
         _contentIndex = previousIndex;
         _selectedIndex = previousIndex;
@@ -79,7 +84,7 @@ class _AppNavigationScreenState extends State<AppNavigationScreen> {
             onTransactionSaved: _showSummaryAfterSave,
             onViewTransactions: _showTransactions,
           ),
-          TransactionsScreen(onTransactionSaved: _showSummaryAfterSave),
+          const TransactionsScreen(),
         ],
       ),
       bottomNavigationBar: NavigationBar(

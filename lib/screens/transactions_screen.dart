@@ -6,6 +6,7 @@ import '../app_typography.dart';
 import '../models/transaction_model.dart';
 import '../providers/transaction_provider.dart';
 import '../routes.dart';
+import 'transaction_form_screen.dart';
 import '../utils/brl_currency.dart';
 import '../widgets/app_feedback.dart';
 
@@ -159,9 +160,15 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final result = await Navigator.pushNamed(
       context,
       Routes.transactionForm,
-      arguments: transaction,
+      arguments: TransactionFormArguments(
+        source: TransactionFormSource.transactions,
+        transaction: transaction,
+      ),
     );
-    if (mounted && result == true) widget.onTransactionSaved?.call();
+    if (mounted && result == true) {
+      AppFeedback.showSuccess(context, 'Transação editada com sucesso!');
+      widget.onTransactionSaved?.call();
+    }
   }
 
   Widget _buildFilterBar(TransactionProvider provider) {
@@ -441,13 +448,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Transações'),
-        actions: [
-          IconButton(
-            onPressed: provider.loading ? null : provider.loadFirstPage,
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Atualizar transações',
-          ),
-        ],
       ),
       body: Column(
         children: [

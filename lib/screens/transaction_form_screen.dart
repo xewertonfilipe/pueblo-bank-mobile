@@ -11,6 +11,18 @@ import '../services/storage_service.dart';
 import '../utils/brl_currency.dart';
 import '../widgets/app_feedback.dart';
 
+enum TransactionFormSource { newTransaction, summary, transactions }
+
+class TransactionFormArguments {
+  const TransactionFormArguments({
+    required this.source,
+    this.transaction,
+  });
+
+  final TransactionFormSource source;
+  final TransactionModel? transaction;
+}
+
 class TransactionFormScreen extends StatefulWidget {
   const TransactionFormScreen({super.key});
 
@@ -43,12 +55,17 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     super.didChangeDependencies();
     if (_existing != null) return;
     final argument = ModalRoute.of(context)?.settings.arguments;
-    if (argument is TransactionModel) {
-      _existing = argument;
-      _amount.text = formatBrlCurrency(argument.amount);
-      _description.text = argument.description;
-      _category = argument.category;
-      _date = argument.date;
+    final transaction = argument is TransactionFormArguments
+        ? argument.transaction
+        : argument is TransactionModel
+            ? argument
+            : null;
+    if (transaction != null) {
+      _existing = transaction;
+      _amount.text = formatBrlCurrency(transaction.amount);
+      _description.text = transaction.description;
+      _category = transaction.category;
+      _date = transaction.date;
     }
   }
 
@@ -108,15 +125,28 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
         final isDeposit = _category == TransactionCategory.deposit;
         final isNew = _existing == null;
         didCompleteSave = true;
-        setState(() => _saving = false);
-        AppFeedback.showSuccess(
-            context,
-            isNew
-                ? (isDeposit
-                    ? 'Depositado com sucesso!'
-                    : 'Saque realizado com sucesso!')
-                : 'Transação editada com sucesso!');
-        Navigator.pop(context, true);
+        final message = isNew
+            ? (isDeposit
+                ? 'Depositado com sucesso!'
+                : 'Saque realizado com sucesso!')
+            : 'Transação editada com sucesso!';
+        if (isNew) {
+          setState(() {
+            _saving = false;
+            _amount.clear();
+            _description.clear();
+            _category = TransactionCategory.deposit;
+            _date = DateTime.now();
+            _receipt = null;
+          });
+          AppFeedback.showSuccess(context, message);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _amountFocusNode.requestFocus();
+          });
+        } else {
+          setState(() => _saving = false);
+          Navigator.pop(context, true);
+        }
       }
     } catch (_) {
       if (mounted) {

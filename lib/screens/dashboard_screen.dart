@@ -8,6 +8,7 @@ import '../models/transaction_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../routes.dart';
+import 'transaction_form_screen.dart';
 import '../utils/brl_currency.dart';
 import '../widgets/category_distribution_chart.dart';
 import '../widgets/app_feedback.dart';
@@ -74,9 +75,17 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
     final result = await Navigator.pushNamed(
       context,
       Routes.transactionForm,
-      arguments: transaction,
+      arguments: TransactionFormArguments(
+        source: transaction == null
+            ? TransactionFormSource.newTransaction
+            : TransactionFormSource.summary,
+        transaction: transaction,
+      ),
     );
-    if (mounted && result == true) widget.onTransactionSaved?.call();
+    if (mounted && result == true) {
+      AppFeedback.showSuccess(context, 'Transação editada com sucesso!');
+      widget.onTransactionSaved?.call();
+    }
   }
 
   void _openTransactions() {
@@ -246,11 +255,7 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                       ),
                     ),
                   ),
-                  onTap: () => Navigator.pushNamed(
-                    context,
-                    Routes.transactionForm,
-                    arguments: item,
-                  ),
+                  onTap: () => _openTransactionForm(transaction: item),
                 ),
             ] else ...[
               const SizedBox(height: 28),

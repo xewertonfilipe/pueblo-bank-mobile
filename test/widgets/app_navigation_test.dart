@@ -176,7 +176,7 @@ void main() {
     expect(find.text('Visão geral'), findsOneWidget);
   });
 
-  testWidgets('retorna ao resumo quando a nova transacao e salva',
+  testWidgets('restaura a origem quando a rota de nova transacao e fechada',
       (tester) async {
     await tester.pumpWidget(
       buildApp(
@@ -189,11 +189,11 @@ void main() {
     await tester.tap(find.text('Nova transação'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Visão geral'), findsOneWidget);
+    expect(find.text('Transações'), findsAtLeastNWidgets(2));
     expect(find.byType(NavigationBar), findsOneWidget);
   });
 
-  testWidgets('retorna ao resumo apos salvar no formulario real',
+  testWidgets('permanece em nova transacao apos salvar no formulario real',
       (tester) async {
     await tester.pumpWidget(buildAuthenticatedApp());
     await tester.pumpAndSettle();
@@ -210,6 +210,11 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     expect(tester.takeException(), isNull);
     await tester.pumpAndSettle();
-    expect(find.text('Visão geral'), findsOneWidget);
+    expect(find.byType(TransactionFormScreen), findsOneWidget);
+    expect(find.text('Depositado com sucesso!'), findsOneWidget);
+    expect(find.byType(TextFormField).first, findsOneWidget);
+    expect(tester.widget<TextFormField>(find.byType(TextFormField).first)
+        .controller
+        ?.text, isEmpty);
   });
 }
