@@ -84,6 +84,8 @@ jobs:
           api-level: 34
           arch: x86_64
           profile: pixel_6
+          disk-size: 3072M
+          sdcard-path-or-size: 256M
           script: |
             adb install build/app/outputs/flutter-apk/app-debug.apk
             maestro test .maestro/
