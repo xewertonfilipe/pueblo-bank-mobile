@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/transaction_model.dart';
 import '../providers/transaction_provider.dart';
 import '../routes.dart';
+import '../utils/brl_currency.dart';
 
 class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
@@ -20,11 +21,15 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<TransactionProvider>().setFilters(startDate: null, endDate: null, category: null);
+    context
+        .read<TransactionProvider>()
+        .setFilters(startDate: null, endDate: null, category: null);
     _scrollController.addListener(() {
       if (!_scrollController.hasClients) return;
       final provider = context.read<TransactionProvider>();
-      if (_scrollController.position.extentAfter < 500 && provider.hasMore && !provider.loadingMore) {
+      if (_scrollController.position.extentAfter < 500 &&
+          provider.hasMore &&
+          !provider.loadingMore) {
         provider.loadNextPage();
       }
     });
@@ -41,9 +46,15 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     _loadTriggeredThisGesture = false;
   }
 
-  void _handlePointerMove(PointerMoveEvent event, TransactionProvider provider) {
-    if (_dragStartY == null || _loadTriggeredThisGesture) return;
-    if (!_scrollController.hasClients || _scrollController.position.maxScrollExtent > 0) return;
+  void _handlePointerMove(
+      PointerMoveEvent event, TransactionProvider provider) {
+    if (_dragStartY == null || _loadTriggeredThisGesture) {
+      return;
+    }
+    if (!_scrollController.hasClients ||
+        _scrollController.position.maxScrollExtent > 0) {
+      return;
+    }
     final delta = event.position.dy - _dragStartY!;
     if (delta < -30) {
       if (provider.hasMore && !provider.loadingMore) {
@@ -52,7 +63,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       } else if (!provider.hasMore) {
         _loadTriggeredThisGesture = true;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Não há mais transações para carregar.')),
+          const SnackBar(
+              content: Text('Não há mais transações para carregar.')),
         );
       }
     }
@@ -76,7 +88,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     if (range != null) {
       provider.setFilters(
         startDate: range.start,
-        endDate: DateTime(range.end.year, range.end.month, range.end.day, 23, 59, 59),
+        endDate: DateTime(
+            range.end.year, range.end.month, range.end.day, 23, 59, 59),
         category: provider.category,
       );
     }
@@ -122,7 +135,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               const SizedBox(height: 12),
               Text(
                 'Você atingiu o fim das transações',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: Colors.grey),
               ),
             ],
           ),
@@ -174,7 +190,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     )
                   : Listener(
                       onPointerDown: _handlePointerDown,
-                      onPointerMove: (event) => _handlePointerMove(event, provider),
+                      onPointerMove: (event) =>
+                          _handlePointerMove(event, provider),
                       onPointerUp: _handlePointerUp,
                       onPointerCancel: _handlePointerUp,
                       child: ListView.builder(
@@ -203,9 +220,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                               '${item.date.day.toString().padLeft(2, '0')}/${item.date.month.toString().padLeft(2, '0')}/${item.date.year}',
                             ),
                             trailing: Text(
-                              'R\$ ${item.amount.toStringAsFixed(2)}',
+                              'R\$ ${formatBrlCurrency(item.amount)}',
                               style: TextStyle(
-                                color: item.isDeposit ? Colors.green : Colors.red,
+                                color:
+                                    item.isDeposit ? Colors.green : Colors.red,
                               ),
                             ),
                             onTap: () => Navigator.pushNamed(

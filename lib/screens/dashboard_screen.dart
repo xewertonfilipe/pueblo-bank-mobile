@@ -6,6 +6,7 @@ import '../models/transaction_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../routes.dart';
+import '../utils/brl_currency.dart';
 import '../widgets/category_distribution_chart.dart';
 import '../widgets/financial_evolution_chart.dart';
 import '../widgets/financial_summary.dart';
@@ -87,17 +88,23 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                   context: context,
                   builder: (context) => AlertDialog(
                     title: const Text('Desativar biometria'),
-                    content: const Text('Você precisará digitar sua senha para entrar da próxima vez. Deseja continuar?'),
+                    content: const Text(
+                        'Você precisará digitar sua senha para entrar da próxima vez. Deseja continuar?'),
                     actions: [
-                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-                      FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Desativar')),
+                      TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancelar')),
+                      FilledButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Desativar')),
                     ],
                   ),
                 );
                 if (confirmed != true) return;
                 await auth.disableBiometric();
                 if (context.mounted) {
-                  Navigator.pushNamedAndRemoveUntil(context, Routes.login, (route) => false);
+                  Navigator.pushNamedAndRemoveUntil(
+                      context, Routes.login, (route) => false);
                 }
               },
               icon: const Icon(Icons.fingerprint),
@@ -138,22 +145,26 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
             const SizedBox(height: 24),
             FinancialSummary(provider: provider),
             const SizedBox(height: 24),
-            Text('Distribuição', style: Theme.of(context).textTheme.titleMedium),
+            Text('Distribuição',
+                style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
             CategoryDistributionChart(provider: provider),
             const SizedBox(height: 24),
-            Text('Evolução financeira', style: Theme.of(context).textTheme.titleMedium),
+            Text('Evolução financeira',
+                style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
             FinancialEvolutionChart(provider: provider),
             const SizedBox(height: 24),
             FilledButton.icon(
-              onPressed: () => Navigator.pushNamed(context, Routes.transactionForm),
+              onPressed: () =>
+                  Navigator.pushNamed(context, Routes.transactionForm),
               icon: const Icon(Icons.add),
               label: const Text('Nova transação'),
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
-              onPressed: () => Navigator.pushNamed(context, Routes.transactions),
+              onPressed: () =>
+                  Navigator.pushNamed(context, Routes.transactions),
               icon: const Icon(Icons.receipt_long),
               label: const Text('Ver transações'),
             ),
@@ -162,7 +173,10 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
               Text('Recentes', style: Theme.of(context).textTheme.titleMedium),
               for (var i = 0; i < 3; i++)
                 const ListTile(
-                  leading: LoadingPlaceholder(width: 24, height: 24, borderRadius: BorderRadius.all(Radius.circular(12))),
+                  leading: LoadingPlaceholder(
+                      width: 24,
+                      height: 24,
+                      borderRadius: BorderRadius.all(Radius.circular(12))),
                   title: LoadingPlaceholder(width: 140, height: 14),
                   trailing: LoadingPlaceholder(width: 60, height: 14),
                 ),
@@ -182,7 +196,7 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                         : item.description,
                   ),
                   trailing: Text(
-                    'R\$ ${item.amount.toStringAsFixed(2)}',
+                    'R\$ ${formatBrlCurrency(item.amount)}',
                     style: TextStyle(
                       color: item.isDeposit ? Colors.green : Colors.red,
                     ),
