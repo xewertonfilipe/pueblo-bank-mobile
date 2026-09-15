@@ -26,4 +26,10 @@ void main() {
 
     expect(find.text('Informe um valor positivo.'), findsOneWidget);
   });
+
+  testWidgets('identifica o controle de seleção de data', (tester) async {
+    await tester.pumpWidget(buildApp());
+
+    expect(find.byTooltip('Selecionar data'), findsOneWidget);
+  });
 }

@@ -50,33 +50,41 @@ class FinancialEvolutionChart extends StatelessWidget {
       theme.textTheme.bodySmall,
       color: Colors.white,
     );
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: SizedBox(
-          height: 190,
-          child: LineChart(
-            LineChartData(
-              lineBarsData: [
-                LineChartBarData(
-                  spots: spots,
-                  isCurved: true,
-                  color: const Color(0xFF075985),
-                  barWidth: 3,
-                  dotData: const FlDotData(show: false),
-                ),
-              ],
-              lineTouchData: LineTouchData(
-                touchTooltipData: LineTouchTooltipData(
-                  getTooltipItems: (touchedSpots) => touchedSpots
-                      .map(
-                        (spot) => LineTooltipItem(
-                          'R\$ ${formatBrlCurrency(spot.y)}',
-                          tooltipStyle,
-                        ),
-                      )
-                      .toList(),
+    return Semantics(
+      container: true,
+      label: 'Evolução financeira',
+      value:
+          'Saldo acumulado em ${spots.length} transações. Saldo final: R\$ ${formatBrlCurrency(balance)}.',
+      hint: 'Gráfico de evolução financeira',
+      excludeSemantics: true,
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: SizedBox(
+            height: 190,
+            child: LineChart(
+              LineChartData(
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: spots,
+                    isCurved: true,
+                    color: const Color(0xFF075985),
+                    barWidth: 3,
+                    dotData: const FlDotData(show: false),
+                  ),
+                ],
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipItems: (touchedSpots) => touchedSpots
+                        .map(
+                          (spot) => LineTooltipItem(
+                            'R\$ ${formatBrlCurrency(spot.y)}',
+                            tooltipStyle,
+                          ),
+                        )
+                        .toList(),
+                  ),
                 ),
               ),
             ),

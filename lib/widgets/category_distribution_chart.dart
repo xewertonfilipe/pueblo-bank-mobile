@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../app_colors.dart';
 import '../providers/transaction_provider.dart';
+import '../utils/brl_currency.dart';
 import 'app_feedback.dart';
 import 'loading_placeholder.dart';
 
@@ -40,27 +41,37 @@ class CategoryDistributionChart extends StatelessWidget {
     final chartLabelStyle = theme.textTheme.labelSmall?.copyWith(
       color: Colors.white,
     );
-    return SizedBox(
-      height: 220,
-      child: Card(
-        clipBehavior: Clip.antiAlias,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: PieChart(
-              PieChartData(sectionsSpace: 3, centerSpaceRadius: 30, sections: [
-            PieChartSectionData(
-                value: provider.summaryDeposits,
-                color: AppColors.income,
-                title: 'Depósitos',
-                radius: 60,
-                titleStyle: chartLabelStyle),
-            PieChartSectionData(
-                value: provider.summaryWithdrawals,
-                color: AppColors.expense,
-                title: 'Saques',
-                radius: 60,
-                titleStyle: chartLabelStyle),
-          ])),
+    return Semantics(
+      container: true,
+      label: 'Distribuição financeira',
+      value:
+          'Depósitos: R\$ ${formatBrlCurrency(provider.summaryDeposits)}. Saques: R\$ ${formatBrlCurrency(provider.summaryWithdrawals)}.',
+      hint: 'Gráfico de distribuição por tipo de transação',
+      excludeSemantics: true,
+      child: SizedBox(
+        height: 220,
+        child: Card(
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: PieChart(PieChartData(
+                sectionsSpace: 3,
+                centerSpaceRadius: 30,
+                sections: [
+                  PieChartSectionData(
+                      value: provider.summaryDeposits,
+                      color: AppColors.income,
+                      title: 'Depósitos',
+                      radius: 60,
+                      titleStyle: chartLabelStyle),
+                  PieChartSectionData(
+                      value: provider.summaryWithdrawals,
+                      color: AppColors.expense,
+                      title: 'Saques',
+                      radius: 60,
+                      titleStyle: chartLabelStyle),
+                ])),
+          ),
         ),
       ),
     );

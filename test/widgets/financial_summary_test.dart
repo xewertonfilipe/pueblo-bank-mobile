@@ -64,5 +64,34 @@ void main() {
     expect(currencyText('234,56'), findsOneWidget);
     expect(find.textContaining('1000.00'), findsNothing);
     expect(find.text('Atualizado agora'), findsOneWidget);
+    expect(find.bySemanticsLabel('Saldo atual'), findsOneWidget);
+    expect(find.bySemanticsLabel('Depósitos'), findsOneWidget);
+    expect(find.bySemanticsLabel('Saques'), findsOneWidget);
+  });
+
+  testWidgets('mantém o resumo utilizável com texto ampliado', (tester) async {
+    final provider = TransactionProvider(service: _SummaryService());
+    provider.setUser('user-1');
+    tester.view
+      ..physicalSize = const Size(320, 640)
+      ..devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+        child: MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: FinancialSummary(provider: provider),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
   });
 }

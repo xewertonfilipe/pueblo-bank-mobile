@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:pueblo_bank/app_colors.dart';
 import 'package:pueblo_bank/models/transaction_model.dart';
 import 'package:pueblo_bank/providers/transaction_provider.dart';
 import 'package:pueblo_bank/screens/transactions_screen.dart';
@@ -73,10 +74,54 @@ void main() {
     final deposit = tester.widget<Text>(find.text('R\$ 1.234,56'));
     final withdrawal = tester.widget<Text>(find.text('R\$ 234,56'));
 
-    expect(deposit.style?.color, Colors.green);
-    expect(withdrawal.style?.color, Colors.red);
+    expect(deposit.style?.color, AppColors.income);
+    expect(withdrawal.style?.color, AppColors.expense);
     expect(find.text('Entrada'), findsOneWidget);
     expect(find.text('Saída'), findsOneWidget);
+  });
+
+  testWidgets('expõe valor e tipo da transação para tecnologias assistivas',
+      (tester) async {
+    final provider = TransactionProvider(service: _FakeTransactionService());
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const MaterialApp(home: TransactionsScreen()),
+      ),
+    );
+    provider.setUser('user-1');
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsLabel(RegExp('Depósito')), findsWidgets);
+    expect(
+      find.bySemanticsLabel(RegExp(r'Valor R\$ 1\.234,56')),
+      findsWidgets,
+    );
+  });
+
+  testWidgets('mantém a lista utilizável em tela estreita com texto ampliado',
+      (tester) async {
+    final provider = TransactionProvider(service: _FakeTransactionService());
+    tester.view
+      ..physicalSize = const Size(320, 640)
+      ..devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+        child: ChangeNotifierProvider.value(
+          value: provider,
+          child: const MaterialApp(home: TransactionsScreen()),
+        ),
+      ),
+    );
+    provider.setUser('user-1');
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('permite selecionar e limpar o filtro de categoria', (

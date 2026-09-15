@@ -257,6 +257,111 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     return const SizedBox.shrink();
   }
 
+  Widget _buildTransactionTile(
+    BuildContext context,
+    ThemeData theme,
+    TransactionModel item,
+  ) {
+    final typeLabel = item.isDeposit ? 'Depósito' : 'Saque';
+    final description = item.description.isEmpty ? typeLabel : item.description;
+    final dateLabel =
+        '${item.date.day.toString().padLeft(2, '0')}/${item.date.month.toString().padLeft(2, '0')}/${item.date.year}';
+    final amountLabel = 'R\$ ${formatBrlCurrency(item.amount)}';
+
+    return Semantics(
+      container: true,
+      explicitChildNodes: true,
+      label: '$description, $typeLabel, Data $dateLabel, Valor $amountLabel',
+      child: ListTile(
+        leading: CircleAvatar(
+          child: Semantics(
+            label: typeLabel,
+            excludeSemantics: true,
+            child: Icon(
+              item.isDeposit ? Icons.arrow_downward : Icons.arrow_upward,
+            ),
+          ),
+        ),
+        title: Text(
+          description,
+          style: theme.textTheme.bodyMedium,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Semantics(
+          label: 'Data $dateLabel',
+          excludeSemantics: true,
+          child: Text(
+            dateLabel,
+            style: theme.textTheme.bodySmall,
+          ),
+        ),
+        trailing: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.sizeOf(context).width * 0.48,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Semantics(
+                    label: 'Valor $amountLabel',
+                    excludeSemantics: true,
+                    child: Text(
+                      amountLabel,
+                      style: AppTypography.financialCompact(
+                        theme.textTheme,
+                        color: item.isDeposit
+                            ? AppColors.income
+                            : AppColors.expense,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 48,
+                child: PopupMenuButton<String>(
+                  tooltip: 'Ações',
+                  padding: EdgeInsets.zero,
+                  onSelected: (action) {
+                    if (action == 'edit') {
+                      Navigator.pushNamed(
+                        context,
+                        Routes.transactionForm,
+                        arguments: item,
+                      );
+                    } else {
+                      _confirmDelete(item);
+                    }
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: Text('Editar'),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Excluir'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        onTap: () => Navigator.pushNamed(
+          context,
+          Routes.transactionForm,
+          arguments: item,
+        ),
+      ),
+    );
+  }
+
   Widget _buildContent(TransactionProvider provider) {
     final theme = Theme.of(context);
     if (provider.loading && provider.items.isEmpty) {
@@ -308,68 +413,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             if (index == provider.items.length) {
               return _buildLoadingIndicator(provider);
             }
-            final item = provider.items[index];
-            return ListTile(
-              leading: CircleAvatar(
-                child: Icon(
-                  item.isDeposit ? Icons.arrow_downward : Icons.arrow_upward,
-                ),
-              ),
-              title: Text(
-                item.description.isEmpty
-                    ? (item.isDeposit ? 'Depósito' : 'Saque')
-                    : item.description,
-                style: theme.textTheme.bodyMedium,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: Text(
-                '${item.date.day.toString().padLeft(2, '0')}/${item.date.month.toString().padLeft(2, '0')}/${item.date.year}',
-                style: theme.textTheme.bodySmall,
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'R\$ ${formatBrlCurrency(item.amount)}',
-                    style: AppTypography.financialCompact(
-                      theme.textTheme,
-                      color:
-                          item.isDeposit ? AppColors.income : AppColors.expense,
-                    ),
-                  ),
-                  PopupMenuButton<String>(
-                    tooltip: 'Ações',
-                    onSelected: (action) {
-                      if (action == 'edit') {
-                        Navigator.pushNamed(
-                          context,
-                          Routes.transactionForm,
-                          arguments: item,
-                        );
-                      } else {
-                        _confirmDelete(item);
-                      }
-                    },
-                    itemBuilder: (context) => const [
-                      PopupMenuItem(
-                        value: 'edit',
-                        child: Text('Editar'),
-                      ),
-                      PopupMenuItem(
-                        value: 'delete',
-                        child: Text('Excluir'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              onTap: () => Navigator.pushNamed(
-                context,
-                Routes.transactionForm,
-                arguments: item,
-              ),
-            );
+            return _buildTransactionTile(context, theme, provider.items[index]);
           },
         ),
       ),
@@ -398,6 +442,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.pushNamed(context, Routes.transactionForm),
+        tooltip: 'Nova transação',
         child: const Icon(Icons.add),
       ),
     );

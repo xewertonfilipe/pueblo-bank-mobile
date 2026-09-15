@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:pueblo_bank/app_colors.dart';
 import 'package:pueblo_bank/providers/auth_provider.dart';
 import 'package:pueblo_bank/providers/transaction_provider.dart';
 import 'package:pueblo_bank/screens/dashboard_screen.dart';
@@ -110,8 +111,8 @@ void main() {
     final deposit = tester.widget<Text>(find.text('R\$ 1.234,56'));
     final withdrawal = tester.widget<Text>(find.text('R\$ 234,56'));
 
-    expect(deposit.style?.color, Colors.green);
-    expect(withdrawal.style?.color, Colors.red);
+    expect(deposit.style?.color, AppColors.income);
+    expect(withdrawal.style?.color, AppColors.expense);
     expect(find.text('Entrada'), findsOneWidget);
     expect(find.text('Saída'), findsOneWidget);
 

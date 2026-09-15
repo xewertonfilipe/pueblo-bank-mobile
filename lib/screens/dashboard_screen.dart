@@ -192,10 +192,14 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
               Text('Recentes', style: theme.textTheme.titleMedium),
               for (final item in recentItems)
                 ListTile(
-                  leading: Icon(
-                    item.category == TransactionCategory.deposit
-                        ? Icons.arrow_downward
-                        : Icons.arrow_upward,
+                  leading: Semantics(
+                    label: item.isDeposit ? 'Depósito' : 'Saque',
+                    excludeSemantics: true,
+                    child: Icon(
+                      item.category == TransactionCategory.deposit
+                          ? Icons.arrow_downward
+                          : Icons.arrow_upward,
+                    ),
                   ),
                   title: Text(
                     item.description.isEmpty
@@ -205,12 +209,17 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  trailing: Text(
-                    'R\$ ${formatBrlCurrency(item.amount)}',
-                    style: AppTypography.financialCompact(
-                      theme.textTheme,
-                      color:
-                          item.isDeposit ? AppColors.income : AppColors.expense,
+                  trailing: Semantics(
+                    label: 'Valor R\$ ${formatBrlCurrency(item.amount)}',
+                    excludeSemantics: true,
+                    child: Text(
+                      'R\$ ${formatBrlCurrency(item.amount)}',
+                      style: AppTypography.financialCompact(
+                        theme.textTheme,
+                        color: item.isDeposit
+                            ? AppColors.income
+                            : AppColors.expense,
+                      ),
                     ),
                   ),
                   onTap: () => Navigator.pushNamed(

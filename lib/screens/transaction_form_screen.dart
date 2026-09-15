@@ -201,6 +201,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                   if (date != null) setState(() => _date = date);
                 },
                 icon: const Icon(Icons.calendar_month),
+                tooltip: 'Selecionar data',
               ),
             ),
             if (_category == TransactionCategory.deposit)

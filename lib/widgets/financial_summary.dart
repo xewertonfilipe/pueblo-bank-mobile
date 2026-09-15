@@ -26,10 +26,19 @@ class FinancialSummary extends StatelessWidget {
             Text('Saldo atual', style: theme.textTheme.titleSmall),
             const SizedBox(height: 6),
             isLoading
-                ? const LoadingPlaceholder(width: 140, height: 28)
-                : Text(
-                    _brlFormat.format(provider.summaryBalance),
-                    style: AppTypography.financialPrimary(theme.textTheme),
+                ? Semantics(
+                    label: 'Saldo atual, carregando',
+                    excludeSemantics: true,
+                    child: LoadingPlaceholder(width: 140, height: 28),
+                  )
+                : Semantics(
+                    label: 'Saldo atual',
+                    value: _brlFormat.format(provider.summaryBalance),
+                    excludeSemantics: true,
+                    child: Text(
+                      _brlFormat.format(provider.summaryBalance),
+                      style: AppTypography.financialPrimary(theme.textTheme),
+                    ),
                   ),
             if (!isLoading && provider.summaryUpdatedAt != null) ...[
               const SizedBox(height: 4),
@@ -42,21 +51,26 @@ class FinancialSummary extends StatelessWidget {
             ],
             const Divider(height: 28),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _SummaryItem(
-                  label: 'Depósitos',
-                  value: provider.summaryDeposits,
-                  format: _brlFormat,
-                  color: AppColors.income,
-                  isLoading: isLoading,
+                Expanded(
+                  child: _SummaryItem(
+                    label: 'Depósitos',
+                    value: provider.summaryDeposits,
+                    format: _brlFormat,
+                    color: AppColors.income,
+                    isLoading: isLoading,
+                  ),
                 ),
-                _SummaryItem(
-                  label: 'Saques',
-                  value: provider.summaryWithdrawals,
-                  format: _brlFormat,
-                  color: AppColors.expense,
-                  isLoading: isLoading,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _SummaryItem(
+                    label: 'Saques',
+                    value: provider.summaryWithdrawals,
+                    format: _brlFormat,
+                    color: AppColors.expense,
+                    isLoading: isLoading,
+                  ),
                 ),
               ],
             ),
@@ -90,16 +104,25 @@ class _SummaryItem extends StatelessWidget {
       children: [
         Text(label, style: theme.textTheme.labelMedium),
         if (isLoading)
-          const Padding(
-            padding: EdgeInsets.only(top: 2),
-            child: LoadingPlaceholder(width: 80, height: 16),
+          Semantics(
+            label: '$label, carregando',
+            excludeSemantics: true,
+            child: const Padding(
+              padding: EdgeInsets.only(top: 2),
+              child: LoadingPlaceholder(width: 80, height: 16),
+            ),
           )
         else
-          Text(
-            format.format(value),
-            style: AppTypography.financialCompact(
-              theme.textTheme,
-              color: color,
+          Semantics(
+            label: label,
+            value: format.format(value),
+            excludeSemantics: true,
+            child: Text(
+              format.format(value),
+              style: AppTypography.financialCompact(
+                theme.textTheme,
+                color: color,
+              ),
             ),
           ),
       ],

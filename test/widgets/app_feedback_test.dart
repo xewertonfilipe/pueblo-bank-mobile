@@ -22,6 +22,10 @@ void main() {
     await tester.tap(find.text('Tentar novamente'));
 
     expect(actionCalled, isTrue);
+    expect(
+      find.bySemanticsLabel('Não foi possível carregar.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('exibe erro e sucesso com feedback semantico', (tester) async {
