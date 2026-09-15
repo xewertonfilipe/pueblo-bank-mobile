@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:another_flushbar/flushbar.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -10,6 +9,7 @@ import '../models/transaction_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../services/storage_service.dart';
+import '../utils/brl_currency.dart';
 
 class TransactionFormScreen extends StatefulWidget {
   const TransactionFormScreen({super.key});
@@ -36,7 +36,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     final argument = ModalRoute.of(context)?.settings.arguments;
     if (argument is TransactionModel) {
       _existing = argument;
-      _amount.text = argument.amount.toStringAsFixed(2);
+      _amount.text = formatBrlCurrency(argument.amount);
       _description.text = argument.description;
       _category = argument.category;
       _date = argument.date;
@@ -65,7 +65,8 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     if (userId == null) return;
     setState(() => _saving = true);
     try {
-      final amount = double.parse(_amount.text.replaceAll(',', '.'));
+      final amount = parseBrlCurrency(_amount.text);
+      if (amount == null || amount <= 0) return;
       final previousReceiptPath = _existing?.receiptPath;
       String? newReceiptPath;
       var transaction = TransactionModel(
@@ -79,24 +80,29 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
         createdAt: _existing?.createdAt,
       );
       if (_receipt != null && _category == TransactionCategory.deposit) {
-        final upload = await StorageService().uploadReceipt(userId: userId, transactionId: transaction.id, file: _receipt!);
-        transaction = transaction.copyWith(receiptUrl: upload.url, receiptPath: upload.path);
+        final upload = await StorageService().uploadReceipt(
+            userId: userId, transactionId: transaction.id, file: _receipt!);
+        transaction = transaction.copyWith(
+            receiptUrl: upload.url, receiptPath: upload.path);
         newReceiptPath = upload.path;
       }
       if (!mounted) return;
       await context.read<TransactionProvider>().save(transaction);
-      if (previousReceiptPath != null && newReceiptPath != null && previousReceiptPath != newReceiptPath) {
+      if (previousReceiptPath != null &&
+          newReceiptPath != null &&
+          previousReceiptPath != newReceiptPath) {
         await StorageService().deleteReceiptByPath(previousReceiptPath);
       }
       if (mounted) {
         final isDeposit = _category == TransactionCategory.deposit;
         final isNew = _existing == null;
         final message = isNew
-            ? (isDeposit ? 'Depositado com sucesso!' : 'Saque realizado com sucesso!')
+            ? (isDeposit
+                ? 'Depositado com sucesso!'
+                : 'Saque realizado com sucesso!')
             : 'Transação editada com sucesso!';
-        final backgroundColor = isNew
-            ? (isDeposit ? Colors.green : Colors.red)
-            : Colors.blue;
+        final backgroundColor =
+            isNew ? (isDeposit ? Colors.green : Colors.red) : Colors.blue;
         Flushbar(
           message: message,
           backgroundColor: backgroundColor,
@@ -110,7 +116,9 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
         });
       }
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Não foi possível salvar a transação.')));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Não foi possível salvar a transação.')));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -129,14 +137,16 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
           children: [
             TextFormField(
               controller: _amount,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-              ],
-              decoration: const InputDecoration(labelText: 'Valor', prefixText: r'R$ '),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: const [BrlCurrencyInputFormatter()],
+              decoration:
+                  const InputDecoration(labelText: 'Valor', prefixText: r'R$ '),
               validator: (value) {
-                final amount = double.tryParse((value ?? '').replaceAll(',', '.'));
-                return amount == null || amount <= 0 ? 'Informe um valor positivo.' : null;
+                final amount = parseBrlCurrency(value);
+                return amount == null || amount <= 0
+                    ? 'Informe um valor positivo.'
+                    : null;
               },
             ),
             const SizedBox(height: 16),
@@ -192,7 +202,8 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               OutlinedButton.icon(
                 onPressed: _pickReceipt,
                 icon: const Icon(Icons.attach_file),
-                label: Text(_receipt == null ? 'Anexar recibo' : 'Recibo selecionado'),
+                label: Text(
+                    _receipt == null ? 'Anexar recibo' : 'Recibo selecionado'),
               ),
             if (_receipt != null) ...[
               const SizedBox(height: 8),
@@ -222,7 +233,8 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             ],
             if (_existing?.receiptUrl != null && _receipt == null) ...[
               const SizedBox(height: 8),
-              Text('Comprovante anexado', style: Theme.of(context).textTheme.bodyMedium),
+              Text('Comprovante anexado',
+                  style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 8),
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
@@ -230,7 +242,8 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                   _existing!.receiptUrl!,
                   height: 180,
                   fit: BoxFit.contain,
-                  errorBuilder: (_, error, stackTrace) => const Text('Não foi possível carregar o comprovante.'),
+                  errorBuilder: (_, error, stackTrace) =>
+                      const Text('Não foi possível carregar o comprovante.'),
                 ),
               ),
             ],
@@ -241,7 +254,10 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               const SizedBox(height: 8),
               Text(
                 'Nenhum comprovante anexado.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: Colors.grey),
               ),
             ],
             const SizedBox(height: 24),

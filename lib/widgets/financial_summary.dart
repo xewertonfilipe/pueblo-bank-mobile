@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../providers/transaction_provider.dart';
 import 'loading_placeholder.dart';
+
+final _brlFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
 
 class FinancialSummary extends StatelessWidget {
   const FinancialSummary({required this.provider, super.key});
@@ -22,7 +25,7 @@ class FinancialSummary extends StatelessWidget {
             isLoading
                 ? const LoadingPlaceholder(width: 140, height: 28)
                 : Text(
-                    'R\$ ${provider.summaryBalance.toStringAsFixed(2)}',
+                    _brlFormat.format(provider.summaryBalance),
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
             const Divider(height: 28),
@@ -32,12 +35,14 @@ class FinancialSummary extends StatelessWidget {
                 _SummaryItem(
                   label: 'Depósitos',
                   value: provider.summaryDeposits,
+                  format: _brlFormat,
                   color: Colors.green,
                   isLoading: isLoading,
                 ),
                 _SummaryItem(
                   label: 'Saques',
                   value: provider.summaryWithdrawals,
+                  format: _brlFormat,
                   color: Colors.red,
                   isLoading: isLoading,
                 ),
@@ -54,12 +59,14 @@ class _SummaryItem extends StatelessWidget {
   const _SummaryItem({
     required this.label,
     required this.value,
+    required this.format,
     required this.color,
     required this.isLoading,
   });
 
   final String label;
   final double value;
+  final NumberFormat format;
   final Color color;
   final bool isLoading;
 
@@ -76,7 +83,7 @@ class _SummaryItem extends StatelessWidget {
           )
         else
           Text(
-            'R\$ ${value.toStringAsFixed(2)}',
+            format.format(value),
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.bold,

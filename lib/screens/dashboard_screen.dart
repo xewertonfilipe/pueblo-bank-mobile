@@ -181,7 +181,12 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                         ? (item.isDeposit ? 'Depósito' : 'Saque')
                         : item.description,
                   ),
-                  trailing: Text('R\$ ${item.amount.toStringAsFixed(2)}'),
+                  trailing: Text(
+                    'R\$ ${item.amount.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      color: item.isDeposit ? Colors.green : Colors.red,
+                    ),
+                  ),
                 ),
             ],
           ],
