@@ -34,7 +34,8 @@ class AuthProvider extends ChangeNotifier {
   Future<void> get ready => _readyFuture;
   bool get biometricEnabled => _biometricEnabled;
   bool get isLocked => _locked;
-  bool get hasUnlockableSession => _user != null && _locked && _biometricEnabled;
+  bool get hasUnlockableSession =>
+      _user != null && _locked && _biometricEnabled;
 
   void clearError() {
     if (_error == null) return;
@@ -48,8 +49,10 @@ class AuthProvider extends ChangeNotifier {
     _locked = _biometricEnabled;
   }
 
-  Future<bool> signIn(String email, String password) => _run(() => _service.signIn(email, password));
-  Future<bool> register(String email, String password) => _run(() => _service.register(email, password));
+  Future<bool> signIn(String email, String password) =>
+      _run(() => _service.signIn(email, password));
+  Future<bool> register(String email, String password) =>
+      _run(() => _service.register(email, password));
 
   Future<String?> getLastEmail() => _service.getLastEmail();
 
@@ -57,7 +60,8 @@ class AuthProvider extends ChangeNotifier {
 
   Future<bool> unlockWithBiometric() async {
     if (_user == null) return false;
-    final success = await _biometricService.authenticate('Confirme sua identidade para entrar no Pueblo Bank');
+    final success = await _biometricService
+        .authenticate('Confirme sua identidade para entrar no Pueblo Bank');
     if (success) {
       _locked = false;
       notifyListeners();
@@ -81,7 +85,7 @@ class AuthProvider extends ChangeNotifier {
 
   // Soft-lock: mantém a sessão do Firebase viva, só exige biometria para voltar.
   Future<void> lock() async {
-    if (!_biometricEnabled) return;
+    if (!_biometricEnabled || _locked) return;
     _locked = true;
     notifyListeners();
   }
@@ -98,6 +102,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
     try {
       await action();
+      _locked = false;
       return true;
     } on FirebaseAuthException catch (exception) {
       _error = _messageFor(exception.code);
