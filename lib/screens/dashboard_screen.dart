@@ -19,10 +19,12 @@ import '../widgets/loading_placeholder.dart';
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
     super.key,
+    this.isActive = true,
     this.onTransactionSaved,
     this.onViewTransactions,
   });
 
+  final bool isActive;
   final VoidCallback? onTransactionSaved;
   final VoidCallback? onViewTransactions;
 
@@ -105,7 +107,9 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
         provider.clearScrollFlag();
         await _scrollToTop();
       }
-      if (mounted) await provider.refreshSummaryIfNeeded();
+      if (mounted && widget.isActive) {
+        await provider.refreshSummaryIfNeeded();
+      }
     });
   }
 

@@ -7,6 +7,7 @@ import 'package:pueblo_bank/app_colors.dart';
 import 'package:pueblo_bank/models/transaction_model.dart';
 import 'package:pueblo_bank/providers/transaction_provider.dart';
 import 'package:pueblo_bank/screens/transactions_screen.dart';
+import 'package:pueblo_bank/routes.dart';
 import 'package:pueblo_bank/services/transaction_service.dart';
 
 class _FakeTransactionService extends TransactionService {
@@ -106,6 +107,78 @@ class _PendingFilterTransactionService extends TransactionService {
       ),
     );
   }
+}
+
+class _PendingActionTransactionService extends TransactionService {
+  var fetchCalls = 0;
+  Completer<TransactionPage>? pendingRefresh;
+  Completer<void>? pendingDelete;
+
+  @override
+  Future<void> delete(String userId, String transactionId) {
+    pendingDelete = Completer<void>();
+    return pendingDelete!.future;
+  }
+
+  @override
+  Future<TransactionPage> fetchPage({
+    required String userId,
+    DateTime? startDate,
+    DateTime? endDate,
+    TransactionCategory? category,
+    dynamic cursor,
+    int limit = 10,
+  }) {
+    fetchCalls++;
+    if (fetchCalls <= 2) {
+      return Future.value(
+        TransactionPage(
+          items: [
+            TransactionModel(
+              id: 'action-item',
+              amount: 100,
+              category: TransactionCategory.deposit,
+              date: DateTime(2026, 9, 14),
+              description: 'Item de ação',
+            ),
+          ],
+          cursor: null,
+        ),
+      );
+    }
+    pendingRefresh = Completer<TransactionPage>();
+    return pendingRefresh!.future;
+  }
+
+  void completeRefresh() {
+    pendingRefresh!.complete(
+      const TransactionPage(items: [], cursor: null),
+    );
+  }
+
+  void completeDelete() {
+    pendingDelete!.complete();
+  }
+}
+
+class _SuccessfulEditForm extends StatefulWidget {
+  const _SuccessfulEditForm();
+
+  @override
+  State<_SuccessfulEditForm> createState() => _SuccessfulEditFormState();
+}
+
+class _SuccessfulEditFormState extends State<_SuccessfulEditForm> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Navigator.pop(context, true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
 void main() {
@@ -303,6 +376,82 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(provider.items, hasLength(1));
+    expect(find.text('Transação excluída.'), findsOneWidget);
+  });
+
+  testWidgets('exibe loading enquanto sincroniza após editar', (tester) async {
+    final service = _PendingActionTransactionService();
+    final provider = TransactionProvider(service: service);
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: MaterialApp(
+          home: const TransactionsScreen(),
+          routes: {
+            Routes.transactionForm: (_) => const _SuccessfulEditForm(),
+          },
+        ),
+      ),
+    );
+    provider.setUser('user-1');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Item de ação'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    expect(find.text('Atualizando transações...'), findsOneWidget);
+    expect(find.text('Item de ação'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilterChip>(find.widgetWithText(FilterChip, 'Depósitos'))
+          .onSelected,
+      isNull,
+    );
+
+    service.completeRefresh();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+    expect(find.text('Transação editada com sucesso!'), findsOneWidget);
+  });
+
+  testWidgets('exibe loading enquanto exclui uma transação', (tester) async {
+    final service = _PendingActionTransactionService();
+    final provider = TransactionProvider(service: service);
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const MaterialApp(home: TransactionsScreen()),
+      ),
+    );
+    provider.setUser('user-1');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Ações').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Excluir'));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Excluir'));
+    await tester.pump();
+
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    expect(find.text('Atualizando transações...'), findsOneWidget);
+    expect(find.text('Item de ação'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilterChip>(find.widgetWithText(FilterChip, 'Depósitos'))
+          .onSelected,
+      isNull,
+    );
+
+    service.completeDelete();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LinearProgressIndicator), findsNothing);
     expect(find.text('Transação excluída.'), findsOneWidget);
   });
 }

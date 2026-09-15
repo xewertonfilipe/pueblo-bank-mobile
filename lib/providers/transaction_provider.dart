@@ -5,6 +5,8 @@ import '../models/transaction_model.dart';
 import '../services/transaction_service.dart';
 
 class TransactionProvider extends ChangeNotifier {
+  static const _minimumSummaryRefresh = Duration(milliseconds: 350);
+
   TransactionProvider({TransactionService? service})
       : _service = service ?? TransactionService();
 
@@ -20,6 +22,7 @@ class TransactionProvider extends ChangeNotifier {
   bool _loadingMore = false;
   bool _hasMore = true;
   bool _summaryLoading = false;
+  Future<void>? _summaryRefreshInFlight;
   DateTime? _summaryUpdatedAt;
   bool _needsSummaryRefresh = false;
   bool _shouldScrollToTop = false;
@@ -84,8 +87,9 @@ class TransactionProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadSummary() async {
+  Future<void> _loadSummary({Duration minimumDuration = Duration.zero}) async {
     if (_userId == null) return;
+    final loadingStartedAt = Stopwatch()..start();
     _summaryLoading = true;
     notifyListeners();
     try {
@@ -94,6 +98,8 @@ class TransactionProvider extends ChangeNotifier {
       _summaryUpdatedAt = DateTime.now();
     } catch (_) {
     } finally {
+      final remaining = minimumDuration - loadingStartedAt.elapsed;
+      if (remaining > Duration.zero) await Future<void>.delayed(remaining);
       _summaryLoading = false;
       notifyListeners();
     }
@@ -101,9 +107,19 @@ class TransactionProvider extends ChangeNotifier {
 
   // Só refaz a busca do resumo quando há uma alteração pendente de save/remove.
   Future<void> refreshSummaryIfNeeded() async {
+    final inFlight = _summaryRefreshInFlight;
+    if (inFlight != null) {
+      return;
+    }
     if (!_needsSummaryRefresh) return;
     _needsSummaryRefresh = false;
-    await _loadSummary();
+    final refresh = _loadSummary(minimumDuration: _minimumSummaryRefresh);
+    _summaryRefreshInFlight = refresh;
+    try {
+      await refresh;
+    } finally {
+      _summaryRefreshInFlight = null;
+    }
   }
 
   Future<void> loadFirstPage() async {

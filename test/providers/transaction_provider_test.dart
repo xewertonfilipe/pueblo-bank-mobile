@@ -102,6 +102,9 @@ class _SummaryRefreshService extends TransactionService {
   Future<String> create(String userId, TransactionModel transaction) async {
     return 'new-id';
   }
+
+  @override
+  Future<void> delete(String userId, String transactionId) async {}
 }
 
 void main() {
@@ -194,6 +197,7 @@ void main() {
     await summaryProvider.refreshSummaryIfNeeded();
     expect(summaryService.summaryCalls, 2);
 
+    final completedAt = Stopwatch()..start();
     summaryService.pendingSummary.complete(
       TransactionPage(
         items: [
@@ -209,9 +213,36 @@ void main() {
     );
     await refresh;
 
+    expect(completedAt.elapsed, greaterThanOrEqualTo(const Duration(
+      milliseconds: 300,
+    )));
     expect(summaryProvider.summaryLoading, isFalse);
     expect(summaryProvider.summaryItems, hasLength(1));
     expect(summaryProvider.summaryBalance, 50);
+  });
+
+  test('refresha o resumo após excluir e evita consulta duplicada', () async {
+    final summaryService = _SummaryRefreshService();
+    final summaryProvider = TransactionProvider(service: summaryService);
+
+    summaryProvider.setUser('user-1');
+    await Future<void>.delayed(Duration.zero);
+
+    await summaryProvider.remove('existing-id');
+
+    final refresh = summaryProvider.refreshSummaryIfNeeded();
+    expect(summaryProvider.summaryLoading, isTrue);
+    expect(summaryService.summaryCalls, 2);
+
+    await summaryProvider.refreshSummaryIfNeeded();
+    expect(summaryService.summaryCalls, 2);
+
+    summaryService.pendingSummary.complete(
+      const TransactionPage(items: [], cursor: null),
+    );
+    await refresh;
+
+    expect(summaryProvider.summaryLoading, isFalse);
   });
 
   test('remove() exclui transação existente', () async {

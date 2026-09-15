@@ -11,18 +11,19 @@ import '../utils/brl_currency.dart';
 import '../widgets/app_feedback.dart';
 
 class TransactionsScreen extends StatefulWidget {
-  const TransactionsScreen({super.key, this.onTransactionSaved});
-
-  final VoidCallback? onTransactionSaved;
+  const TransactionsScreen({super.key});
 
   @override
   State<TransactionsScreen> createState() => _TransactionsScreenState();
 }
 
 class _TransactionsScreenState extends State<TransactionsScreen> {
+  static const _minimumActionLoading = Duration(milliseconds: 350);
+
   final _scrollController = ScrollController();
   double? _dragStartY;
   bool _loadTriggeredThisGesture = false;
+  bool _actionLoading = false;
 
   @override
   void initState() {
@@ -37,6 +38,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       if (!_scrollController.hasClients) return;
       final provider = context.read<TransactionProvider>();
       if (_scrollController.position.extentAfter < 500 &&
+          !_actionLoading &&
           provider.hasMore &&
           !provider.loadingMore) {
         provider.loadNextPage();
@@ -57,7 +59,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   void _handlePointerMove(
       PointerMoveEvent event, TransactionProvider provider) {
-    if (_dragStartY == null || _loadTriggeredThisGesture) {
+    if (_dragStartY == null || _loadTriggeredThisGesture || _actionLoading) {
       return;
     }
     if (!_scrollController.hasClients ||
@@ -136,6 +138,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     );
     if (confirmed != true || !mounted) return;
 
+    setState(() => _actionLoading = true);
     try {
       await context.read<TransactionProvider>().remove(item.id);
       if (mounted) AppFeedback.showSuccess(context, 'Transação excluída.');
@@ -143,6 +146,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       if (mounted) {
         AppFeedback.showError(context, 'Não foi possível excluir a transação.');
       }
+    } finally {
+      if (mounted) setState(() => _actionLoading = false);
     }
   }
 
@@ -166,14 +171,24 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       ),
     );
     if (mounted && result == true) {
-      AppFeedback.showSuccess(context, 'Transação editada com sucesso!');
-      widget.onTransactionSaved?.call();
+      setState(() => _actionLoading = true);
+      final loadingStartedAt = Stopwatch()..start();
+      try {
+        await context.read<TransactionProvider>().loadFirstPage();
+        final remaining = _minimumActionLoading - loadingStartedAt.elapsed;
+        if (remaining > Duration.zero) await Future<void>.delayed(remaining);
+        if (mounted) {
+          AppFeedback.showSuccess(context, 'Transação editada com sucesso!');
+        }
+      } finally {
+        if (mounted) setState(() => _actionLoading = false);
+      }
     }
   }
 
   Widget _buildFilterBar(TransactionProvider provider) {
     final theme = Theme.of(context);
-    final filtersEnabled = !provider.loading;
+    final filtersEnabled = !provider.loading && !_actionLoading;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Column(
@@ -230,10 +245,17 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          if (provider.loading)
+          if (provider.loading || _actionLoading)
             const Padding(
               padding: EdgeInsets.only(top: 8),
-              child: LinearProgressIndicator(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  LinearProgressIndicator(),
+                  SizedBox(height: 4),
+                  Text('Atualizando transações...'),
+                ],
+              ),
             ),
         ],
       ),
@@ -357,6 +379,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 child: PopupMenuButton<String>(
                   tooltip: 'Ações',
                   padding: EdgeInsets.zero,
+                  enabled: !_actionLoading,
                   onSelected: (action) {
                     if (action == 'edit') {
                       _openTransactionForm(transaction: item);
@@ -379,7 +402,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             ],
           ),
         ),
-        onTap: () => _openTransactionForm(transaction: item),
+        onTap: _actionLoading
+          ? null
+          : () => _openTransactionForm(transaction: item),
       ),
     );
   }

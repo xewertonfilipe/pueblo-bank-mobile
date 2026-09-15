@@ -81,6 +81,7 @@ class _AppNavigationScreenState extends State<AppNavigationScreen> {
         index: _contentIndex,
         children: [
           DashboardScreen(
+            isActive: _contentIndex == 0,
             onTransactionSaved: _showSummaryAfterSave,
             onViewTransactions: _showTransactions,
           ),
