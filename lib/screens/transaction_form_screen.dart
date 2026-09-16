@@ -173,6 +173,13 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
           Navigator.pop(context, true);
         }
       }
+    } on InsufficientBalanceException {
+      if (mounted) {
+        AppFeedback.showError(
+          context,
+          'Não é possível realizar um saque sem saldo disponível.',
+        );
+      }
     } catch (_) {
       if (mounted) {
         AppFeedback.showError(

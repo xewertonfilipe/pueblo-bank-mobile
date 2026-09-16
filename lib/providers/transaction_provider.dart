@@ -4,6 +4,14 @@ import 'package:flutter/foundation.dart';
 import '../models/transaction_model.dart';
 import '../services/transaction_service.dart';
 
+class InsufficientBalanceException implements Exception {
+  const InsufficientBalanceException();
+}
+
+class BalanceUnavailableException implements Exception {
+  const BalanceUnavailableException();
+}
+
 class TransactionProvider extends ChangeNotifier {
   static const _minimumSummaryRefresh = Duration(milliseconds: 350);
 
@@ -87,8 +95,8 @@ class TransactionProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadSummary({Duration minimumDuration = Duration.zero}) async {
-    if (_userId == null) return;
+  Future<bool> _loadSummary({Duration minimumDuration = Duration.zero}) async {
+    if (_userId == null) return false;
     final loadingStartedAt = Stopwatch()..start();
     _summaryLoading = true;
     notifyListeners();
@@ -96,7 +104,9 @@ class TransactionProvider extends ChangeNotifier {
       final page = await _service.fetchPage(userId: _userId!, limit: 1000);
       _summaryItems = page.items;
       _summaryUpdatedAt = DateTime.now();
+      return true;
     } catch (_) {
+      return false;
     } finally {
       final remaining = minimumDuration - loadingStartedAt.elapsed;
       if (remaining > Duration.zero) await Future<void>.delayed(remaining);
@@ -187,6 +197,14 @@ class TransactionProvider extends ChangeNotifier {
 
   Future<void> save(TransactionModel transaction) async {
     if (_userId == null) return;
+    if (transaction.createdAt == null &&
+        transaction.category == TransactionCategory.withdrawal) {
+      final summaryLoaded = await _loadSummary();
+      if (!summaryLoaded) throw const BalanceUnavailableException();
+      if (summaryBalance <= 0) {
+        throw const InsufficientBalanceException();
+      }
+    }
     if (transaction.createdAt == null) {
       final id = await _service.create(_userId!, transaction);
       _items = [

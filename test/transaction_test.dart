@@ -5,6 +5,7 @@ import 'package:pueblo_bank/services/transaction_service.dart';
 
 class FakeTransactionService extends TransactionService {
   final List<TransactionModel> storage = [];
+  var createCalls = 0;
 
   @override
   Future<TransactionPage> fetchPage({
@@ -20,6 +21,7 @@ class FakeTransactionService extends TransactionService {
 
   @override
   Future<String> create(String userId, TransactionModel transaction) async {
+    createCalls++;
     final id = 'id_${storage.length + 1}';
     storage.add(transaction.copyWith(id: id));
     return id;
@@ -74,6 +76,28 @@ void main() {
       expect(provider.balance, 0.0);
       expect(provider.deposits, 0.0);
       expect(provider.withdrawals, 0.0);
+    });
+
+    test('Rejects withdrawal when the summary balance is zero', () async {
+      final fakeService = FakeTransactionService();
+      final provider = TransactionProvider(service: fakeService);
+      provider.setUser('test_user_id');
+
+      await expectLater(
+        provider.save(
+          TransactionModel(
+            id: '',
+            amount: 50.0,
+            category: TransactionCategory.withdrawal,
+            date: DateTime(2026, 9, 10),
+          ),
+        ),
+        throwsA(isA<InsufficientBalanceException>()),
+      );
+
+      expect(fakeService.createCalls, 0);
+      expect(provider.items, isEmpty);
+      expect(provider.summaryBalance, 0.0);
     });
 
     test('Saves transaction and updates balance and items', () async {
