@@ -46,6 +46,7 @@ void main() {
       biometricService: _FakeBiometricService(authenticationResult: true),
     );
 
+    await provider.ready;
     await provider.enableBiometric();
     await provider.lock();
 
@@ -64,6 +65,25 @@ void main() {
 
     expect(provider.isLocked, isFalse);
     expect(provider.hasUnlockableSession, isFalse);
+    provider.dispose();
+  });
+
+  test('não bloqueia durante a seleção de arquivo', () async {
+    final provider = AuthProvider(
+      service: _FakeAuthService(initialUser: _MockUser()),
+      biometricService: _FakeBiometricService(authenticationResult: true),
+    );
+
+    await provider.ready;
+    await provider.enableBiometric();
+    provider.beginFileSelection();
+    await provider.lock();
+
+    expect(provider.isPickingFile, isTrue);
+    expect(provider.isLocked, isFalse);
+
+    provider.endFileSelection();
+    expect(provider.isPickingFile, isFalse);
     provider.dispose();
   });
 

@@ -80,8 +80,16 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   }
 
   Future<void> _pickReceipt() async {
-    final file = await _picker.pickImage(source: ImageSource.gallery);
-    if (file != null) setState(() => _receipt = File(file.path));
+    final auth = context.read<AuthProvider>();
+    auth.beginFileSelection();
+    try {
+      final file = await _picker.pickImage(source: ImageSource.gallery);
+      if (mounted && file != null) {
+        setState(() => _receipt = File(file.path));
+      }
+    } finally {
+      auth.endFileSelection();
+    }
   }
 
   void _removeReceipt() {

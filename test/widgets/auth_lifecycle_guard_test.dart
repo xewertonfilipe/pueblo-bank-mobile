@@ -38,6 +38,7 @@ void main() {
       service: _FakeAuthService(),
       biometricService: _FakeBiometricService(),
     );
+    await auth.ready;
     await auth.enableBiometric();
     final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -138,6 +139,43 @@ void main() {
     await tester.pump();
 
     expect(find.text('conteúdo protegido'), findsOneWidget);
+    auth.dispose();
+  });
+
+  testWidgets('não bloqueia enquanto seleciona um arquivo', (tester) async {
+    final auth = AuthProvider(
+      service: _FakeAuthService(),
+      biometricService: _FakeBiometricService(),
+    );
+    await auth.ready;
+    await auth.enableBiometric();
+    auth.beginFileSelection();
+    final navigatorKey = GlobalKey<NavigatorState>();
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: auth,
+        child: AuthLifecycleGuard(
+          navigatorKey: navigatorKey,
+          child: MaterialApp(
+            navigatorKey: navigatorKey,
+            home: const Scaffold(body: Text('conteúdo protegido')),
+          ),
+        ),
+      ),
+    );
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pump();
+
+    expect(auth.isLocked, isFalse);
+    expect(find.byIcon(Icons.lock_outline), findsNothing);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+
+    expect(find.text('conteúdo protegido'), findsOneWidget);
+    auth.endFileSelection();
     auth.dispose();
   });
 }

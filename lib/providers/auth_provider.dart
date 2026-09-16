@@ -27,6 +27,7 @@ class AuthProvider extends ChangeNotifier {
   String? _error;
   bool _biometricEnabled = false;
   bool _locked = false;
+  bool _isPickingFile = false;
 
   User? get user => _user;
   bool get loading => _loading;
@@ -36,6 +37,19 @@ class AuthProvider extends ChangeNotifier {
   bool get isLocked => _locked;
   bool get hasUnlockableSession =>
       _user != null && _locked && _biometricEnabled;
+  bool get isPickingFile => _isPickingFile;
+
+  void beginFileSelection() {
+    if (_isPickingFile) return;
+    _isPickingFile = true;
+    notifyListeners();
+  }
+
+  void endFileSelection() {
+    if (!_isPickingFile) return;
+    _isPickingFile = false;
+    notifyListeners();
+  }
 
   void clearError() {
     if (_error == null) return;
@@ -83,7 +97,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> lock() async {
-    if (!_biometricEnabled || _locked) return;
+    if (!_biometricEnabled || _locked || _isPickingFile) return;
     _locked = true;
     notifyListeners();
   }

@@ -56,6 +56,9 @@ class _AuthLifecycleGuardState extends State<AuthLifecycleGuard>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_auth.isPickingFile && state != AppLifecycleState.resumed) {
+      return;
+    }
     switch (state) {
       case AppLifecycleState.hidden:
       case AppLifecycleState.paused:
