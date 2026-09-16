@@ -15,6 +15,13 @@ enum TransactionFormSource { newTransaction, summary, transactions }
 
 enum TransactionFormResult { goToSummary }
 
+enum _TransactionFormOperation {
+  idle,
+  pickingReceipt,
+  uploadingReceipt,
+  savingTransaction,
+}
+
 class TransactionFormArguments {
   const TransactionFormArguments({
     required this.source,
@@ -26,7 +33,9 @@ class TransactionFormArguments {
 }
 
 class TransactionFormScreen extends StatefulWidget {
-  const TransactionFormScreen({super.key});
+  const TransactionFormScreen({super.key, this.storageService});
+
+  final StorageService? storageService;
 
   @override
   State<TransactionFormScreen> createState() => _TransactionFormScreenState();
@@ -42,7 +51,35 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   TransactionCategory _category = TransactionCategory.deposit;
   DateTime _date = DateTime.now();
   File? _receipt;
-  bool _saving = false;
+  _TransactionFormOperation _operation = _TransactionFormOperation.idle;
+
+  StorageService get _storageService =>
+      widget.storageService ?? StorageService();
+  bool get _isBusy => _operation != _TransactionFormOperation.idle;
+  String get _operationLabel {
+    switch (_operation) {
+      case _TransactionFormOperation.pickingReceipt:
+        return 'Selecionando comprovante...';
+      case _TransactionFormOperation.uploadingReceipt:
+        return 'Enviando comprovante...';
+      case _TransactionFormOperation.savingTransaction:
+        return 'Salvando transação...';
+      case _TransactionFormOperation.idle:
+        return '';
+    }
+  }
+
+  bool get _hasDisplayableReceiptUrl {
+    final value = _existing?.receiptUrl;
+    if (value == null || value.trim().isEmpty) return false;
+    final uri = Uri.tryParse(value);
+    return uri != null &&
+        (uri.scheme == 'http' || uri.scheme == 'https') &&
+        uri.host.isNotEmpty;
+  }
+
+  bool get _hasExistingReceipt =>
+      _existing?.receiptUrl?.trim().isNotEmpty == true;
 
   @override
   void initState() {
@@ -81,6 +118,8 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
   Future<void> _pickReceipt() async {
     final auth = context.read<AuthProvider>();
+    if (_isBusy) return;
+    setState(() => _operation = _TransactionFormOperation.pickingReceipt);
     auth.beginFileSelection();
     try {
       final file = await _picker.pickImage(source: ImageSource.gallery);
@@ -89,10 +128,14 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       }
     } finally {
       auth.endFileSelection();
+      if (mounted) {
+        setState(() => _operation = _TransactionFormOperation.idle);
+      }
     }
   }
 
   void _removeReceipt() {
+    if (_isBusy) return;
     setState(() => _receipt = null);
   }
 
@@ -113,17 +156,25 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   }
 
   Future<void> _save() async {
+    if (_isBusy) return;
     if (!_formKey.currentState!.validate()) return;
     if (_existing != null && !_hasChanges) return;
     final userId = context.read<AuthProvider>().user?.uid;
     if (userId == null) return;
-    setState(() => _saving = true);
+    final amount = parseBrlCurrency(_amount.text);
+    if (amount == null || amount <= 0) return;
+    final shouldUploadReceipt =
+        _receipt != null && _category == TransactionCategory.deposit;
+    setState(() {
+      _operation = shouldUploadReceipt
+          ? _TransactionFormOperation.uploadingReceipt
+          : _TransactionFormOperation.savingTransaction;
+    });
     var didCompleteSave = false;
+    var transactionSaved = false;
+    String? newReceiptPath;
     try {
-      final amount = parseBrlCurrency(_amount.text);
-      if (amount == null || amount <= 0) return;
       final previousReceiptPath = _existing?.receiptPath;
-      String? newReceiptPath;
       var transaction = TransactionModel(
         id: _existing?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
         amount: amount,
@@ -134,19 +185,21 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
         receiptPath: _existing?.receiptPath,
         createdAt: _existing?.createdAt,
       );
-      if (_receipt != null && _category == TransactionCategory.deposit) {
-        final upload = await StorageService().uploadReceipt(
+      if (shouldUploadReceipt) {
+        final upload = await _storageService.uploadReceipt(
             userId: userId, transactionId: transaction.id, file: _receipt!);
         transaction = transaction.copyWith(
             receiptUrl: upload.url, receiptPath: upload.path);
         newReceiptPath = upload.path;
       }
       if (!mounted) return;
+      setState(() => _operation = _TransactionFormOperation.savingTransaction);
       await context.read<TransactionProvider>().save(transaction);
+      transactionSaved = true;
       if (previousReceiptPath != null &&
           newReceiptPath != null &&
           previousReceiptPath != newReceiptPath) {
-        await StorageService().deleteReceiptByPath(previousReceiptPath);
+        await _storageService.deleteReceiptByPath(previousReceiptPath);
       }
       if (mounted) {
         final isDeposit = _category == TransactionCategory.deposit;
@@ -159,7 +212,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             : 'Transação editada com sucesso!';
         if (isNew) {
           setState(() {
-            _saving = false;
+            _operation = _TransactionFormOperation.idle;
             _amount.clear();
             _description.clear();
             _category = TransactionCategory.deposit;
@@ -177,7 +230,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             Navigator.pop(context, TransactionFormResult.goToSummary);
           }
         } else {
-          setState(() => _saving = false);
+          setState(() => _operation = _TransactionFormOperation.idle);
           Navigator.pop(context, true);
         }
       }
@@ -196,7 +249,14 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
         );
       }
     } finally {
-      if (mounted && !didCompleteSave) setState(() => _saving = false);
+      if (!transactionSaved && newReceiptPath != null) {
+        try {
+          await _storageService.deleteReceiptByPath(newReceiptPath);
+        } catch (_) {}
+      }
+      if (mounted && !didCompleteSave) {
+        setState(() => _operation = _TransactionFormOperation.idle);
+      }
     }
   }
 
@@ -236,6 +296,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             TextFormField(
               controller: _amount,
               focusNode: _amountFocusNode,
+              enabled: !_isBusy,
               onChanged: (_) => setState(() {}),
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
@@ -264,7 +325,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                 ),
               ],
               selected: {_category},
-              onSelectionChanged: (selection) {
+              onSelectionChanged: _isBusy ? null : (selection) {
                 final value = selection.first;
                 setState(() {
                   _category = value;
@@ -277,6 +338,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _description,
+              enabled: !_isBusy,
               onChanged: (_) => setState(() {}),
               decoration: const InputDecoration(labelText: 'Descrição'),
             ),
@@ -287,7 +349,9 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                 'Data: ${_date.day.toString().padLeft(2, '0')}/${_date.month.toString().padLeft(2, '0')}/${_date.year}',
               ),
               trailing: IconButton(
-                onPressed: () async {
+                onPressed: _isBusy
+                    ? null
+                    : () async {
                   final date = await showDatePicker(
                     context: context,
                     firstDate: DateTime(2020),
@@ -302,7 +366,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             ),
             if (_category == TransactionCategory.deposit)
               OutlinedButton.icon(
-                onPressed: _pickReceipt,
+                onPressed: _isBusy ? null : _pickReceipt,
                 icon: const Icon(Icons.attach_file),
                 label: Text(
                     _receipt == null ? 'Anexar recibo' : 'Recibo selecionado'),
@@ -321,37 +385,48 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               Row(
                 children: [
                   TextButton.icon(
-                    onPressed: _pickReceipt,
+                    onPressed: _isBusy ? null : _pickReceipt,
                     icon: const Icon(Icons.edit),
                     label: const Text('Trocar'),
                   ),
                   TextButton.icon(
-                    onPressed: _removeReceipt,
+                    onPressed: _isBusy ? null : _removeReceipt,
                     icon: const Icon(Icons.close),
                     label: const Text('Remover'),
                   ),
                 ],
               ),
             ],
-            if (_existing?.receiptUrl != null && _receipt == null) ...[
+            if (_hasExistingReceipt && _receipt == null) ...[
               const SizedBox(height: 8),
-              Text('Comprovante anexado',
-                  style: Theme.of(context).textTheme.bodyMedium),
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  _existing!.receiptUrl!,
-                  height: 180,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, error, stackTrace) =>
-                      const Text('Não foi possível carregar o comprovante.'),
-                ),
+              Text(
+                _hasDisplayableReceiptUrl
+                    ? 'Comprovante anexado'
+                    : 'Comprovante anexado, mas não foi possível carregá-lo.',
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
+              const SizedBox(height: 8),
+              if (_hasDisplayableReceiptUrl)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    _existing!.receiptUrl!,
+                    height: 180,
+                    fit: BoxFit.contain,
+                    frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                      if (wasSynchronouslyLoaded || frame != null) return child;
+                      return const SizedBox(
+                        height: 180,
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    },
+                    errorBuilder: (_, error, stackTrace) => const Text(
+                        'Não foi possível carregar o comprovante.'),
+                  ),
+                ),
             ],
-            if (_existing != null &&
-                _category == TransactionCategory.deposit &&
-                _existing?.receiptUrl == null &&
+            if (_category == TransactionCategory.deposit &&
+              !_hasExistingReceipt &&
                 _receipt == null) ...[
               const SizedBox(height: 8),
               Text(
@@ -362,12 +437,18 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                     ?.copyWith(color: Colors.grey),
               ),
             ],
+            if (_isBusy) ...[
+              const SizedBox(height: 16),
+              const LinearProgressIndicator(),
+              const SizedBox(height: 8),
+              Text(_operationLabel, textAlign: TextAlign.center),
+            ],
             const SizedBox(height: 24),
             FilledButton(
-              onPressed: _saving || (_existing != null && !_hasChanges)
+              onPressed: _isBusy || (_existing != null && !_hasChanges)
                   ? null
                   : _save,
-              child: _saving
+              child: _isBusy
                   ? const SizedBox(
                       height: 20,
                       width: 20,

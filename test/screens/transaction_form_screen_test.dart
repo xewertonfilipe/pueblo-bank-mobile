@@ -113,12 +113,45 @@ void main() {
   testWidgets('mantem salvar habilitado para nova transacao', (tester) async {
     await tester.pumpWidget(buildApp());
 
+    expect(find.text('Nenhum comprovante anexado.'), findsOneWidget);
     expect(
       tester.widget<FilledButton>(find.widgetWithText(
         FilledButton,
         'Salvar depósito',
       )).onPressed,
       isNotNull,
+    );
+  });
+
+  testWidgets('abre edição com comprovante inválido sem falhar',
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: SizedBox())),
+    );
+    await tester.pump();
+    final transaction = TransactionModel(
+      id: 'transaction-with-receipt',
+      amount: 100,
+      category: TransactionCategory.deposit,
+      date: DateTime(2026, 9, 14),
+      receiptUrl: 'gs://invalid-receipt-path',
+    );
+    Navigator.of(tester.element(find.byType(Scaffold))).push(
+      MaterialPageRoute(
+        settings: RouteSettings(
+          arguments: TransactionFormArguments(
+            source: TransactionFormSource.transactions,
+            transaction: transaction,
+          ),
+        ),
+        builder: (_) => const TransactionFormScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Comprovante anexado, mas não foi possível carregá-lo.'),
+      findsOneWidget,
     );
   });
 }
